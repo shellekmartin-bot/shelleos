@@ -1,0 +1,14 @@
+# API keys and credentials — NEVER commit
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.Python
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
