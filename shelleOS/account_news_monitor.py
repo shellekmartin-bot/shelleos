@@ -301,51 +301,78 @@ class SignalCollector:
 def format_brief(signals, dry_run=False):
     signals = sorted(signals, key=lambda s: s["rank"])
     total   = len(signals)
-    tag     = " [TEST]" if dry_run else ""
-
-    lines = [
-        f"ACCOUNT INTELLIGENCE BRIEF — {TODAY}{tag}",
-        f"{len(COMPANIES)} ACCOUNTS MONITORED  |  {total} SIGNALS TODAY",
-        "=" * 60,
-        "",
-    ]
-
-    if not signals:
-        lines += ["Quiet day — no significant signals found.", "",
-                  "─" * 60, "Powered by ShelleOS · Google News RSS · Claude Haiku"]
-        return "\n".join(lines)
-
-    top = [s for s in signals if s["rank"] <= 3][:5]
-    if top:
-        lines.append("TOP SIGNALS")
-        for s in top:
-            lines.append(f"  • {s['company_name']}: {s['headline']}")
-            if s["notes"]:
-                lines.append(f"    {s['notes'][:160]}")
-        lines.append("")
+    tag     = " — TEST" if dry_run else ""
 
     categories = [
-        (TYPE_ACQUISITION, "🔴 M&A / ACQUISITIONS"),
-        (TYPE_SELL_SIDE,   "🔴 SELL SIDE / STRATEGIC REVIEW"),
-        (TYPE_FUNDING,     "🟢 FUNDING / IPO"),
-        (TYPE_LEADERSHIP,  "🟡 LEADERSHIP CHANGES"),
-        (TYPE_PARTNERSHIP, "🔵 PARTNERSHIPS"),
-        (TYPE_LAYOFFS,     "⚪ LAYOFFS / RESTRUCTURING"),
-        (TYPE_EARNINGS,    "📊 EARNINGS"),
-        (TYPE_NEWS,        "📰 OTHER NEWS"),
+        (TYPE_ACQUISITION, "🔴 M&A / Acquisitions"),
+        (TYPE_SELL_SIDE,   "🔴 Sell Side / Strategic Review"),
+        (TYPE_FUNDING,     "🟢 Funding / IPO"),
+        (TYPE_LEADERSHIP,  "🟡 Leadership Changes"),
+        (TYPE_PARTNERSHIP, "🔵 Partnerships"),
+        (TYPE_LAYOFFS,     "⚪ Layoffs / Restructuring"),
+        (TYPE_EARNINGS,    "📊 Earnings"),
+        (TYPE_NEWS,        "📰 Other News"),
     ]
-    for ttype, label in categories:
-        items = [s for s in signals if s["trigger_type"] == ttype]
-        if items:
-            lines.append(label)
-            for s in items:
-                lines.append(f"  • {s['company_name']} [{s['date_str']}]: {s['headline']}")
-                if s["notes"]:
-                    lines.append(f"    {s['notes'][:180]}")
-            lines.append("")
 
-    lines += ["─" * 60, "Powered by ShelleOS · Google News RSS · Claude Haiku"]
-    return "\n".join(lines)
+    html = f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  body {{ font-family: Arial, sans-serif; font-size: 14px; color: #1a1a1a; max-width: 680px; margin: 0 auto; padding: 20px; }}
+  .header {{ background: #1a1a2e; color: white; padding: 20px 24px; border-radius: 8px; margin-bottom: 20px; }}
+  .header h1 {{ margin: 0; font-size: 18px; font-weight: 700; }}
+  .header .meta {{ color: #aaa; font-size: 13px; margin-top: 6px; }}
+  .section {{ margin-bottom: 24px; }}
+  .section-title {{ font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #555; border-bottom: 1px solid #e5e5e5; padding-bottom: 6px; margin-bottom: 12px; }}
+  .signal {{ padding: 10px 14px; background: #f9f9f9; border-left: 3px solid #ccc; border-radius: 0 6px 6px 0; margin-bottom: 8px; }}
+  .signal.ma {{ border-left-color: #e74c3c; }}
+  .signal.sell {{ border-left-color: #e74c3c; }}
+  .signal.fund {{ border-left-color: #27ae60; }}
+  .signal.lead {{ border-left-color: #f39c12; }}
+  .signal.partner {{ border-left-color: #2980b9; }}
+  .signal.layoff {{ border-left-color: #95a5a6; }}
+  .signal.earn {{ border-left-color: #8e44ad; }}
+  .signal.news {{ border-left-color: #bdc3c7; }}
+  .company {{ font-weight: 700; font-size: 14px; color: #1a1a1a; }}
+  .date {{ font-size: 11px; color: #999; margin-left: 6px; }}
+  .headline {{ font-size: 13px; color: #333; margin: 3px 0; }}
+  .notes {{ font-size: 12px; color: #666; margin-top: 4px; line-height: 1.5; }}
+  .quiet {{ text-align: center; padding: 40px; color: #999; font-size: 14px; }}
+  .footer {{ font-size: 11px; color: #bbb; text-align: center; margin-top: 30px; padding-top: 16px; border-top: 1px solid #eee; }}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Account Intelligence Brief{tag}</h1>
+  <div class="meta">{TODAY} &nbsp;·&nbsp; {len(COMPANIES)} accounts monitored &nbsp;·&nbsp; {total} signals today</div>
+</div>
+"""
+
+    if not signals:
+        html += '<div class="quiet">Quiet day — no significant signals found.</div>'
+    else:
+        css_map = {
+            TYPE_ACQUISITION: "ma", TYPE_SELL_SIDE: "sell", TYPE_FUNDING: "fund",
+            TYPE_LEADERSHIP: "lead", TYPE_PARTNERSHIP: "partner",
+            TYPE_LAYOFFS: "layoff", TYPE_EARNINGS: "earn", TYPE_NEWS: "news",
+        }
+        for ttype, label in categories:
+            items = [s for s in signals if s["trigger_type"] == ttype]
+            if not items:
+                continue
+            css = css_map.get(ttype, "news")
+            html += f'<div class="section"><div class="section-title">{label} ({len(items)})</div>'
+            for s in items:
+                html += f"""<div class="signal {css}">
+  <span class="company">{s['company_name']}</span><span class="date">{s['date_str']}</span>
+  <div class="headline">{s['headline']}</div>
+  {'<div class="notes">' + s['notes'] + '</div>' if s['notes'] else ''}
+</div>"""
+            html += '</div>'
+
+    html += '<div class="footer">Powered by ShelleOS · Google News RSS · Claude Haiku</div></body></html>'
+    return html
 
 
 # ─── Email send ────────────────────────────────────────────────────────────────
@@ -358,7 +385,7 @@ def send_brief(brief_text, dry_run=False):
     msg["From"]    = GMAIL_FROM
     msg["To"]      = recipient
     msg["Subject"] = subject
-    msg.attach(MIMEText(brief_text, "plain"))
+    msg.attach(MIMEText(brief_text, "html"))
 
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
         server.login(GMAIL_FROM, GMAIL_APP_PASSWORD)
