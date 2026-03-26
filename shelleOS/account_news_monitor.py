@@ -309,71 +309,171 @@ class SignalCollector:
             "trigger_type": trigger_type,
             "date_str":     date_str,
             "rank":         rank,
+            "link":         signal.get("link", ""),
         }
         self.signals.append(entry)
         self.company_signal_counts[key] = self.company_signal_counts.get(key, 0) + 1
         return entry
 
 
-# ─── Email formatter ───────────────────────────────────────────────────────────
-def format_brief(signals, dry_run=False):
+# ─── Badge colors per signal type ─────────────────────────────────────────────
+BADGE_COLORS = {
+    TYPE_ACQUISITION: ("#c0392b", "M&A"),
+    TYPE_SELL_SIDE:   ("#8e44ad", "Sell Side"),
+    TYPE_FUNDING:     ("#27ae60", "Funding / IPO"),
+    TYPE_LEADERSHIP:  ("#2980b9", "Leadership"),
+    TYPE_PARTNERSHIP: ("#16a085", "Partnership"),
+    TYPE_LAYOFFS:     ("#e67e22", "Layoffs"),
+    TYPE_EARNINGS:    ("#5d6d7e", "Earnings"),
+    TYPE_NEWS:        ("#7f8c8d", "News"),
+}
+
+SECTION_LABELS = [
+    (TYPE_ACQUISITION, "M&A / Acquisitions"),
+    (TYPE_SELL_SIDE,   "Sell Side / Strategic Review"),
+    (TYPE_FUNDING,     "Funding / IPO"),
+    (TYPE_LEADERSHIP,  "Leadership Changes"),
+    (TYPE_PARTNERSHIP, "Partnerships"),
+    (TYPE_LAYOFFS,     "Layoffs / Restructuring"),
+    (TYPE_EARNINGS,    "Earnings"),
+    (TYPE_NEWS,        "Other News"),
+]
+
+
+def _badge(ttype):
+    color, label = BADGE_COLORS.get(ttype, ("#7f8c8d", ttype))
+    return (
+        f'<span style="background:{color};color:#fff;font-size:11px;font-weight:700;'
+        f'letter-spacing:0.5px;padding:3px 9px;border-radius:3px;'
+        f'font-family:Arial,sans-serif;text-transform:uppercase;">{label}</span>'
+    )
+
+
+def _esc(text):
+    """Minimal HTML escaping."""
+    return (text or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def format_brief_html(signals, dry_run=False):
     signals = sorted(signals, key=lambda s: s["rank"])
     total   = len(signals)
-    tag     = " [TEST]" if dry_run else ""
+    tag     = " · TEST" if dry_run else ""
+    date_fmt = datetime.strptime(TODAY, "%Y-%m-%d").strftime("%A, %B %-d, %Y")
 
-    lines = []
-    lines.append(f"ACCOUNT INTELLIGENCE BRIEF — {TODAY}{tag}")
-    lines.append(f"{len(COMPANIES)} accounts monitored  |  {total} signals today")
-    lines.append("")
+    # ── Header ──────────────────────────────────────────────────────────────────
+    html = f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#f0f2f5;font-family:Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f2f5;">
+<tr><td align="center" style="padding:24px 12px;">
+<table width="680" cellpadding="0" cellspacing="0" style="max-width:680px;width:100%;">
+
+  <!-- HEADER -->
+  <tr><td style="background:#1a2332;border-radius:8px 8px 0 0;padding:28px 32px;">
+    <div style="color:#fff;font-size:26px;font-weight:700;letter-spacing:-0.5px;">
+      Account Intelligence Brief{tag}
+    </div>
+    <div style="color:#8899aa;font-size:14px;margin-top:6px;">
+      {date_fmt} &nbsp;|&nbsp; {len(COMPANIES)} accounts monitored &nbsp;|&nbsp;
+      <strong style="color:#fff;">{total} signal{'s' if total != 1 else ''} today</strong>
+    </div>
+  </td></tr>
+
+  <!-- BODY -->
+  <tr><td style="background:#fff;border-radius:0 0 8px 8px;padding:28px 32px;">
+"""
 
     if not signals:
-        lines.append("Quiet day — no significant signals found.")
-        lines.append("")
-        lines.append("─" * 50)
-        lines.append("Powered by ShelleOS · Google News RSS · Claude Haiku")
-        return "\n".join(lines)
+        html += (
+            '<p style="color:#555;font-size:15px;">'
+            'Quiet day — no significant signals found across your 238 accounts.</p>'
+        )
+    else:
+        for ttype, section_label in SECTION_LABELS:
+            items = [s for s in signals if s["trigger_type"] == ttype]
+            if not items:
+                continue
 
-    categories = [
-        (TYPE_ACQUISITION, "M&A / ACQUISITIONS"),
-        (TYPE_SELL_SIDE,   "SELL SIDE / STRATEGIC REVIEW"),
-        (TYPE_FUNDING,     "FUNDING / IPO"),
-        (TYPE_LEADERSHIP,  "LEADERSHIP CHANGES"),
-        (TYPE_PARTNERSHIP, "PARTNERSHIPS"),
-        (TYPE_LAYOFFS,     "LAYOFFS / RESTRUCTURING"),
-        (TYPE_EARNINGS,    "EARNINGS"),
-        (TYPE_NEWS,        "OTHER NEWS"),
-    ]
+            color, _ = BADGE_COLORS.get(ttype, ("#7f8c8d", ttype))
+            html += f"""
+    <!-- SECTION: {section_label} -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+      <tr><td style="padding-bottom:12px;border-bottom:2px solid {color};">
+        <span style="font-size:11px;font-weight:700;letter-spacing:1.5px;
+                     color:{color};text-transform:uppercase;">{_esc(section_label)}</span>
+        <span style="font-size:11px;color:#aaa;margin-left:8px;">({len(items)})</span>
+      </td></tr>
+"""
+            for s in items:
+                note = _esc(s["notes"].split(".")[0] + "." if s["notes"] else "")
+                headline_esc = _esc(s["headline"])
+                company_esc  = _esc(s["company_name"])
+                link = s.get("link", "")
+                headline_html = (
+                    f'<a href="{link}" style="color:#1a2332;text-decoration:none;">'
+                    f'{headline_esc}</a>'
+                    if link else headline_esc
+                )
 
-    for ttype, label in categories:
-        items = [s for s in signals if s["trigger_type"] == ttype]
-        if not items:
-            continue
-        lines.append(f"── {label} ({len(items)}) " + "─" * max(0, 44 - len(label)))
-        lines.append("")
-        for s in items:
-            note = s["notes"].split(".")[0] + "." if s["notes"] else ""
-            lines.append(f"  {s['company_name']}  [{s['date_str']}]")
-            lines.append(f"  {s['headline']}")
-            if note:
-                lines.append(f"  {note}")
-            lines.append("")
+                html += f"""
+      <tr><td style="padding:16px 0 0 0;">
+        <table width="100%" cellpadding="0" cellspacing="0"
+               style="border:1px solid #e8ecf0;border-radius:6px;overflow:hidden;">
+          <!-- card header -->
+          <tr><td style="background:#f8f9fb;padding:10px 16px;
+                         border-bottom:1px solid #e8ecf0;">
+            {_badge(ttype)}
+            <span style="font-size:13px;font-weight:700;color:#1a2332;
+                         margin-left:10px;vertical-align:middle;">{company_esc}</span>
+            <span style="font-size:11px;color:#aaa;float:right;
+                         line-height:22px;">{_esc(s['date_str'])}</span>
+          </td></tr>
+          <!-- headline -->
+          <tr><td style="padding:12px 16px 6px 16px;">
+            <div style="font-size:14px;font-weight:600;line-height:1.4;color:#1a2332;">
+              {headline_html}
+            </div>
+          </td></tr>
+"""
+                if note:
+                    html += f"""
+          <!-- notes -->
+          <tr><td style="padding:0 16px 14px 16px;">
+            <div style="font-size:13px;color:#555;line-height:1.5;">{note}</div>
+          </td></tr>
+"""
+                html += "        </table>\n      </td></tr>\n"
 
-    lines.append("─" * 50)
-    lines.append("Powered by ShelleOS · Google News RSS · Claude Haiku")
-    return "\n".join(lines)
+            html += "    </table>\n"
+
+    # ── Footer ───────────────────────────────────────────────────────────────────
+    html += f"""
+    <hr style="border:none;border-top:1px solid #e8ecf0;margin:8px 0 16px 0;">
+    <p style="font-size:11px;color:#aaa;margin:0;">
+      Powered by ShelleOS &middot; Google News RSS &middot; Claude Haiku
+      &nbsp;&middot;&nbsp; {date_fmt}
+    </p>
+
+  </td></tr>
+</table>
+</td></tr>
+</table>
+</body></html>"""
+
+    return html
 
 
 # ─── Email send ────────────────────────────────────────────────────────────────
-def send_brief(brief_text, dry_run=False):
+def send_brief(brief_html, dry_run=False):
     recipient = GMAIL_FROM if dry_run else GMAIL_TO
     tag       = " [TEST]" if dry_run else ""
     subject   = f"Account Intelligence Brief — {TODAY}{tag}"
 
-    msg = MIMEMultipart()
+    msg = MIMEMultipart("alternative")
     msg["From"]    = GMAIL_FROM
     msg["To"]      = recipient
     msg["Subject"] = subject
-    msg.attach(MIMEText(brief_text, "plain", "utf-8"))
+    msg.attach(MIMEText(brief_html, "html", "utf-8"))
 
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
         server.login(GMAIL_FROM, GMAIL_APP_PASSWORD)
@@ -433,11 +533,11 @@ def main():
     print(f"\n{'='*60}")
     print(f"Signals found: {total}")
 
-    brief = format_brief(collector.signals, dry_run=args.dry_run)
+    brief = format_brief_html(collector.signals, dry_run=args.dry_run)
 
     if args.dry_run:
         print("\n" + "─"*60)
-        print(brief)
+        print(f"[HTML email — {len(brief)} chars, {len(collector.signals)} signals]")
         print("─"*60)
 
     send_brief(brief, dry_run=args.dry_run)
