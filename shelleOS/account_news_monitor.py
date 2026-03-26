@@ -393,6 +393,7 @@ def main():
     print(f"{len(COMPANIES)} companies loaded")
     print("=" * 60)
 
+    company_names_set = {c.lower() for c in COMPANIES}
     collector = SignalCollector(company_names_set)
 
     # ── PASS 1: All 238 companies in batches of 6 ─────────────────────────────
