@@ -217,8 +217,8 @@ Return a JSON array of real deal signals only:
 - Significant partnerships (JVs, distribution deals)
 - Layoffs or major restructurings
 
-Skip: press releases, product updates, awards, analyst ratings, stock price moves.
-Max 3 signals. If nothing real, return [].
+Skip: press releases, product updates, awards, analyst ratings, stock price moves, historical news (anything older than current week), minor partnerships like sponsorships or charity deals.
+Max 2 signals. If nothing real, return [].
 
 JSON only, no markdown:
 [
@@ -252,8 +252,21 @@ def google_news_search_signals(query, lookback_days=7):
 
 
 # ─── Signal collector ─────────────────────────────────────────────────────────
+def match_company(name, company_names_set):
+    """Fuzzy match — handles slight name variations from Claude."""
+    n = name.lower().strip()
+    if n in company_names_set:
+        return True
+    # Check if any list company name starts with or contains the returned name
+    for c in company_names_set:
+        if n in c or c in n:
+            return True
+    return False
+
+
 class SignalCollector:
-    def __init__(self):
+    def __init__(self, company_names_set):
+        self.company_names_set     = company_names_set
         self.signals               = []
         self.seen_headlines        = set()
         self.company_signal_counts = {}
@@ -267,6 +280,11 @@ class SignalCollector:
 
         if not headline or not company_name:
             return None
+
+        # Only keep companies in John's list
+        if not match_company(company_name, self.company_names_set):
+            return None
+
         try:
             datetime.strptime(date_str, "%Y-%m-%d")
         except ValueError:
@@ -333,10 +351,11 @@ def format_brief(signals, dry_run=False):
         lines.append(f"── {label} ({len(items)}) " + "─" * max(0, 44 - len(label)))
         lines.append("")
         for s in items:
+            note = s["notes"].split(".")[0] + "." if s["notes"] else ""
             lines.append(f"  {s['company_name']}  [{s['date_str']}]")
             lines.append(f"  {s['headline']}")
-            if s["notes"]:
-                lines.append(f"  {s['notes']}")
+            if note:
+                lines.append(f"  {note}")
             lines.append("")
 
     lines.append("─" * 50)
@@ -374,7 +393,7 @@ def main():
     print(f"{len(COMPANIES)} companies loaded")
     print("=" * 60)
 
-    collector = SignalCollector()
+    collector = SignalCollector(company_names_set)
 
     # ── PASS 1: All 238 companies in batches of 6 ─────────────────────────────
     print(f"\nPASS 1: Scanning {len(COMPANIES)} companies in batches of 6...")
