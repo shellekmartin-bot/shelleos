@@ -1,0 +1,56 @@
+name: Account News Monitor
+
+on:
+  schedule:
+    # 7:00 AM PT (15:00 UTC) weekdays — adjust to 14:00 UTC in winter (PST)
+    - cron: '0 15 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Test run — sends to Shelle instead of John'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+jobs:
+  run-monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements_account_monitor.txt
+
+      - name: Run monitor (scheduled — live to John)
+        if: github.event_name == 'schedule'
+        run: python account_news_monitor.py
+        env:
+          ANTHROPIC_API_KEY:  ${{ secrets.ANTHROPIC_API_KEY }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GMAIL_FROM:         ${{ secrets.GMAIL_FROM }}
+          GMAIL_TO:           ${{ secrets.GMAIL_TO }}
+
+      - name: Run monitor (manual trigger)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            python account_news_monitor.py --dry-run
+          else
+            python account_news_monitor.py
+          fi
+        env:
+          ANTHROPIC_API_KEY:  ${{ secrets.ANTHROPIC_API_KEY }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GMAIL_FROM:         ${{ secrets.GMAIL_FROM }}
+          GMAIL_TO:           ${{ secrets.GMAIL_TO }}
