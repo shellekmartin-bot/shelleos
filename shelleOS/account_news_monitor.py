@@ -117,6 +117,7 @@ COMPANIES = [
 # ─── Signal types ──────────────────────────────────────────────────────────────
 TYPE_ACQUISITION = "M&A"
 TYPE_SELL_SIDE   = "Sell Side"
+TYPE_ACTIVIST    = "Activist"
 TYPE_FUNDING     = "Funding"
 TYPE_LEADERSHIP  = "Leadership"
 TYPE_PARTNERSHIP = "Partnership"
@@ -131,6 +132,10 @@ def classify_signal(signal_type_str):
         return TYPE_ACQUISITION
     if any(x in s for x in ["sell_side", "sell side", "strategic review", "exploring sale"]):
         return TYPE_SELL_SIDE
+    if any(x in s for x in ["activist", "elliott", "starboard", "valueact", "jana",
+                              "icahn", "third point", "pershing", "engaged capital",
+                              "takes stake", "proxy fight", "board seats", "shareholder letter"]):
+        return TYPE_ACTIVIST
     if any(x in s for x in ["fund", "ipo", "round", "capital raise", "debt", "series", "credit"]):
         return TYPE_FUNDING
     if any(x in s for x in ["leadership", "ceo", "cfo", "clo", "coo", "chief",
@@ -153,17 +158,19 @@ def rank_signal(trigger_type, headline, notes):
         return 1
     if trigger_type in (TYPE_ACQUISITION, TYPE_SELL_SIDE):
         return 2
-    if trigger_type == TYPE_FUNDING:
+    if trigger_type == TYPE_ACTIVIST:
         return 3
-    if trigger_type == TYPE_LEADERSHIP:
+    if trigger_type == TYPE_FUNDING:
         return 4
-    if trigger_type == TYPE_PARTNERSHIP:
+    if trigger_type == TYPE_LEADERSHIP:
         return 5
-    if trigger_type == TYPE_LAYOFFS:
+    if trigger_type == TYPE_PARTNERSHIP:
         return 6
-    if trigger_type == TYPE_EARNINGS:
+    if trigger_type == TYPE_LAYOFFS:
         return 7
-    return 8
+    if trigger_type == TYPE_EARNINGS:
+        return 8
+    return 9
 
 
 # ─── Google News RSS ───────────────────────────────────────────────────────────
@@ -214,6 +221,7 @@ Return a JSON array of real deal signals only:
 - Leadership changes (CEO, CFO, GC, Corp Dev)
 - Earnings with M&A or strategic commentary
 - Strategic review / exploring sale
+- Activist investor taking a stake or pushing for change
 - Significant partnerships (JVs, distribution deals)
 - Layoffs or major restructurings
 
@@ -225,7 +233,7 @@ JSON only, no markdown:
   {{
     "company_name": "exact company name from articles",
     "headline": "one-line summary under 100 chars",
-    "signal_type": "acquisition|funding|leadership|earnings|sell_side|partnership|layoffs|news",
+    "signal_type": "acquisition|sell_side|activist|funding|leadership|partnership|layoffs|earnings|news",
     "notes": "2-3 sentences: what happened and why it matters",
     "date_str": "YYYY-MM-DD"
   }}
@@ -320,6 +328,7 @@ class SignalCollector:
 BADGE_COLORS = {
     TYPE_ACQUISITION: ("#c0392b", "M&A"),
     TYPE_SELL_SIDE:   ("#8e44ad", "Sell Side"),
+    TYPE_ACTIVIST:    ("#d35400", "Activist"),
     TYPE_FUNDING:     ("#27ae60", "Funding / IPO"),
     TYPE_LEADERSHIP:  ("#2980b9", "Leadership"),
     TYPE_PARTNERSHIP: ("#16a085", "Partnership"),
@@ -331,6 +340,7 @@ BADGE_COLORS = {
 SECTION_LABELS = [
     (TYPE_ACQUISITION, "M&A / Acquisitions"),
     (TYPE_SELL_SIDE,   "Sell Side / Strategic Review"),
+    (TYPE_ACTIVIST,    "Activist"),
     (TYPE_FUNDING,     "Funding / IPO"),
     (TYPE_LEADERSHIP,  "Leadership Changes"),
     (TYPE_PARTNERSHIP, "Partnerships"),
