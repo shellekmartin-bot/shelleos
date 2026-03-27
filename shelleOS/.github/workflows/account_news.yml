@@ -2,14 +2,14 @@ name: Account News Monitor
 
 on:
   schedule:
-    # 7:00 AM PT (15:00 UTC) weekdays — adjust to 14:00 UTC in winter (PST)
-    - cron: '0 15 * * 1-5'
+    # 7:00 AM PDT (14:00 UTC Mar-Nov) — adjust to 15:00 UTC Dec-Feb for PST
+    - cron: '0 14 * * 1-5'
   workflow_dispatch:
     inputs:
       dry_run:
-        description: 'Test run — sends to Shelle instead of John'
+        description: 'Optional: test run (sends to Shelle, default is false for John)'
         required: false
-        default: 'true'
+        default: 'false'
         type: choice
         options:
           - 'true'
@@ -41,7 +41,7 @@ jobs:
           GMAIL_FROM:         ${{ secrets.GMAIL_FROM }}
           GMAIL_TO:           ${{ secrets.GMAIL_TO }}
 
-      - name: Run monitor (manual trigger)
+      - name: Run monitor (manual — live to John)
         if: github.event_name == 'workflow_dispatch'
         run: |
           if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
