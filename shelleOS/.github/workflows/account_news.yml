@@ -2,8 +2,8 @@ name: Account News Monitor
 
 on:
   schedule:
-    # 7:00 AM PDT (14:00 UTC Mar-Nov) — adjust to 15:00 UTC Dec-Feb for PST
-    - cron: '0 14 * * 1-5'
+    # 5:00 AM PDT (12:00 UTC Mar-Nov) — adjust to 13:00 UTC Dec-Feb for PST
+    - cron: '0 12 * * 1-5'
   workflow_dispatch:
     inputs:
       dry_run:
