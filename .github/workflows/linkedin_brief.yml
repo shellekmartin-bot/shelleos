@@ -31,7 +31,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install anthropic requests python-dotenv
+        run: pip install anthropic==0.42.0 requests python-dotenv
 
       - name: Run Shelle brief
         if: github.event_name == 'schedule' || github.event.inputs.persona == 'shelle' || github.event.inputs.persona == 'all'
