@@ -2,7 +2,7 @@ name: LinkedIn Brief Generator
 
 on:
   schedule:
-    - cron: '0 11 * * 1'  # 4 AM Pacific every Monday
+    - cron: '0 11 * * 1,4'  # 4 AM Pacific every Monday and Thursday
   workflow_dispatch:
     inputs:
       persona:

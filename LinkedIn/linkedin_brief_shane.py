@@ -193,14 +193,32 @@ def main():
 
 def send_email(body_text):
     today = datetime.now().strftime("%Y-%m-%d")
+    intro = """Hey Shane,
+
+Here's your LinkedIn Brief. Below are 3 ready-to-post angles for each of
+your accounts, based on what's happening right now.
+
+Pick the ones that hit, tweak if you want, and post. The goal: stay visible
+to your buyers without spending an hour staring at a blank text box.
+
+3 angles per company:
+  - Deal Observation: what you're seeing across the territory
+  - Seasoned POV: the take only you can make
+  - Human/Unexpected: the one that makes them remember you
+
+Let's go, Sugar Shane.
+─────────────────────────────────────────────────────────────
+
+"""
+    full_text = intro + body_text
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"LinkedIn Brief (Shane) — {today}"
+    msg["Subject"] = f"Your LinkedIn Ammo — {today}"
     msg["From"] = GMAIL_FROM
     msg["To"] = SEND_TO
     html = "<html><body><pre style='font-family: monospace; font-size: 14px;'>"
-    html += body_text.replace("<", "&lt;").replace(">", "&gt;")
+    html += full_text.replace("<", "&lt;").replace(">", "&gt;")
     html += "</pre></body></html>"
-    msg.attach(MIMEText(body_text, "plain"))
+    msg.attach(MIMEText(full_text, "plain"))
     msg.attach(MIMEText(html, "html"))
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
