@@ -36,9 +36,9 @@ if missing:
 # ─── Persona ─────────────────────────────────────────────────────────────────
 PERSONA = """
 Name: Shane Long
-Background: Senior enterprise sales, covers Pacific Northwest. Deep relationships, territory expert.
-Territory: Washington and Oregon
-Voice: senior, direct, relationship-driven
+Background: Senior enterprise sales, covers Pacific Northwest. Deep relationships, territory expert. Lives in Seattle. DJs on the side... they call him Sugar Shane. Avid guitar player. Genuinely great guy who people want to do business with.
+Territory: Washington and Oregon. Covers investment banks, private equity, and corporates.
+Voice: senior, direct, relationship-driven, warm
 """
 
 # ─── Voice rules (same for all personas) ─────────────────────────────────────
