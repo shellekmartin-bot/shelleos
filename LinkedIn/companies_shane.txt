@@ -1,0 +1,2 @@
+# Shane's companies — one per line
+# Add Washington and Oregon territory accounts here
