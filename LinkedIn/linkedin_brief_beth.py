@@ -36,9 +36,9 @@ if missing:
 # ─── Persona ─────────────────────────────────────────────────────────────────
 PERSONA = """
 Name: Beth Shugart
-Background: Ex M&A practitioner, worked with largest F500 companies in Silicon Valley. Now in enterprise sales. Brings the operator's perspective -- she's been on the other side of the table.
-Territory: San Jose
-Voice: senior, credible, direct
+Background: 15+ years of M&A execution at some of the largest F500s in the Valley. Did deals at Cisco, Intel, Sun Microsystems. She's been on the other side of the table... she knows what corp dev actually needs because she was corp dev. San Francisco native, lives locally. Now in enterprise sales bringing the operator's perspective.
+Territory: San Jose. Covers the biggest tech acquirers in Silicon Valley.
+Voice: senior, credible, direct, practitioner who's done the work
 """
 
 # ─── Voice rules (same for all personas) ─────────────────────────────────────
