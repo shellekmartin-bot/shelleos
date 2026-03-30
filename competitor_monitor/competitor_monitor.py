@@ -22,6 +22,7 @@ from datetime import datetime, timedelta, date
 from email.utils import parsedate_to_datetime
 from urllib.parse import quote_plus
 from dotenv import load_dotenv
+import httpx
 import anthropic
 
 # ─── Credentials ──────────────────────────────────────────────────────────────
@@ -41,7 +42,9 @@ if missing:
     print(f"\nERROR: Missing env vars: {', '.join(missing)}")
     sys.exit(1)
 
-claude_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+# Create httpx client without proxy interference
+http_client = httpx.Client()
+claude_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY, http_client=http_client)
 TODAY = date.today().isoformat()
 
 # ─── Database setup ───────────────────────────────────────────────────────────
