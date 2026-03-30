@@ -20,7 +20,6 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(dotenv_path=os.path.join(SCRIPT_DIR, '..', '.env'))
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
-AIRTABLE_API_KEY = os.getenv("AIRTABLE_API_KEY")
 
 GMAIL_FROM = os.getenv("GMAIL_FROM")
 GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD")
@@ -28,18 +27,12 @@ SEND_TO = "shelle.martin@datasite.com"
 
 missing = [k for k, v in {
     "ANTHROPIC_API_KEY": ANTHROPIC_API_KEY,
-    "AIRTABLE_API_KEY": AIRTABLE_API_KEY,
     "GMAIL_FROM": GMAIL_FROM,
     "GMAIL_APP_PASSWORD": GMAIL_APP_PASSWORD,
 }.items() if not v]
 if missing:
     print(f"ERROR: Missing .env keys: {', '.join(missing)}")
     sys.exit(1)
-
-# ─── Airtable config ────────────────────────────────────────────────────────
-AIRTABLE_BASE_ID = "app9VxYkYesBpA7Fe"
-AIRTABLE_COMPANY_TABLE_ID = "tblBImf6yfRbzSB4e"
-AIRTABLE_COMPANY_NAME_FIELD_ID = "fldrIHICJ7fN6G87M"
 
 # ─── Persona (swap this block for a different person) ────────────────────────
 PERSONA = """
@@ -65,47 +58,26 @@ claude_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
 
 def load_companies():
-    """Load strategic accounts from Airtable with LinkedIn URLs. Falls back to companies.txt."""
-    url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_COMPANY_TABLE_ID}"
-    headers = {"Authorization": f"Bearer {AIRTABLE_API_KEY}"}
-    params = {
-        "fields[]": ["Company Name", "linkedin_company_url"],
-        "filterByFormula": "{is_strategic}=TRUE()",
-        "pageSize": 100,
-    }
-    companies = []
-    try:
-        while True:
-            resp = requests.get(url, headers=headers, params=params, timeout=30)
-            resp.raise_for_status()
-            data = resp.json()
-            for rec in data.get("records", []):
-                fields = rec.get("fields", {})
-                name = fields.get("Company Name", "").strip()
-                linkedin_url = fields.get("linkedin_company_url", "")
-                if name:
-                    companies.append({"name": name, "linkedin_url": linkedin_url or ""})
-            offset = data.get("offset")
-            if not offset:
-                break
-            params["offset"] = offset
-        print(f"Loaded {len(companies)} strategic accounts from Airtable")
-        return companies
-    except Exception as e:
-        print(f"WARNING: Airtable load failed ({e}), falling back to companies.txt")
+    """Load companies from companies.txt. Format: Company Name | LinkedIn URL (optional)"""
     path = os.path.join(SCRIPT_DIR, "companies.txt")
     if not os.path.exists(path):
-        print(f"ERROR: {path} not found and Airtable unavailable.")
+        print(f"ERROR: {path} not found. Create it with one company per line.")
         sys.exit(1)
+    companies = []
     with open(path) as f:
-        companies = [
-            {"name": line.strip(), "linkedin_url": ""}
-            for line in f if line.strip() and not line.startswith("#")
-        ]
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if "|" in line:
+                name, url = line.split("|", 1)
+                companies.append({"name": name.strip(), "linkedin_url": url.strip()})
+            else:
+                companies.append({"name": line, "linkedin_url": ""})
     if not companies:
         print("ERROR: companies.txt is empty.")
         sys.exit(1)
-    print(f"Loaded {len(companies)} companies from companies.txt (fallback)")
+    print(f"Loaded {len(companies)} companies from companies.txt")
     return companies
 
 

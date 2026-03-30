@@ -1,6 +1,37 @@
-# One company per line. Lines starting with # are ignored.
-Datasite
-Salesforce
-ServiceNow
-Palo Alto Networks
-Snowflake
+# Shelle Martin — 35 Strategic Accounts
+# Format: Company Name | LinkedIn URL
+Advanced Micro Devices | https://www.linkedin.com/company/advanced-micro-devices
+Apple | https://www.linkedin.com/company/apple
+Block | https://www.linkedin.com/company/block-inc
+Central Garden & Pet | https://www.linkedin.com/company/central-garden-and-pet
+Concentrix | https://www.linkedin.com/company/concentrix
+Databricks | https://www.linkedin.com/company/databricks
+Electronic Arts | https://www.linkedin.com/company/electronic-arts
+Equinix | https://www.linkedin.com/company/equinix
+Franklin Resources | https://www.linkedin.com/company/franklin-templeton
+Gap | https://www.linkedin.com/company/gap-inc-
+Gilead | https://www.linkedin.com/company/gilead-sciences
+Grocery Outlet Holding | https://www.linkedin.com/company/grocery-outlet
+Intel | https://www.linkedin.com/company/intel-corporation
+Lam Research | https://www.linkedin.com/company/lam-research
+NetApp | https://www.linkedin.com/company/netapp
+Netflix | https://www.linkedin.com/company/netflix
+Nvidia | https://www.linkedin.com/company/nvidia
+OpenAI | https://www.linkedin.com/company/openai
+PG&E | https://www.linkedin.com/company/pge-corporation
+PayPal Holdings | https://www.linkedin.com/company/paypal
+Restoration Hardware | https://www.linkedin.com/company/rh-restoration-hardware
+Robert Half | https://www.linkedin.com/company/robert-half
+Robinhood | https://www.linkedin.com/company/robinhood
+Roblox | https://www.linkedin.com/company/roblox
+Ross Stores | https://www.linkedin.com/company/ross-stores
+Salesforce | https://www.linkedin.com/company/salesforce
+Synopsys | https://www.linkedin.com/company/synopsys
+TD Synnex | https://www.linkedin.com/company/td-synnex
+The Clorox Company | https://www.linkedin.com/company/the-clorox-company
+The Cooper Companies | https://www.linkedin.com/company/the-cooper-companies
+TriNet Group | https://www.linkedin.com/company/trinet-group
+Veeva Systems | https://www.linkedin.com/company/veeva-systems
+Visa | https://www.linkedin.com/company/visa
+Wilson Sonsini Goodrich & Rosati | https://www.linkedin.com/company/wilson-sonsini-goodrich-rosati
+Workday | https://www.linkedin.com/company/workday

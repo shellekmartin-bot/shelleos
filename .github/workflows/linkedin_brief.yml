@@ -38,8 +38,6 @@ jobs:
         run: python LinkedIn/linkedin_brief.py
         env:
           ANTHROPIC_API_KEY:  ${{ secrets.ANTHROPIC_API_KEY }}
-
-          AIRTABLE_API_KEY:   ${{ secrets.AIRTABLE_API_KEY }}
           GMAIL_FROM:         ${{ secrets.GMAIL_FROM }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
 
