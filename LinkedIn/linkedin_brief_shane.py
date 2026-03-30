@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 """
 LinkedIn Brief Generator — Shane's version
-Reads companies_shane.txt, fetches recent news via Perplexity, generates 3 LinkedIn
+Fetches recent news via Google News RSS (free), generates 3 LinkedIn
 post angles per company using Claude.
 """
 
-import os, sys, time, requests, smtplib
-from datetime import datetime
+import os, sys, re, time, requests, smtplib
+import xml.etree.ElementTree as ET
+from datetime import datetime, timedelta
+from email.utils import parsedate_to_datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from urllib.parse import quote_plus
 from dotenv import load_dotenv
 import anthropic
 
@@ -16,7 +19,6 @@ import anthropic
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(dotenv_path=os.path.join(SCRIPT_DIR, '..', '.env'))
 
-PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
 GMAIL_FROM = os.getenv("GMAIL_FROM")
@@ -24,7 +26,6 @@ GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD")
 SEND_TO = "shane.long@datasite.com"
 
 missing = [k for k, v in {
-    "PERPLEXITY_API_KEY": PERPLEXITY_API_KEY,
     "ANTHROPIC_API_KEY": ANTHROPIC_API_KEY,
     "GMAIL_FROM": GMAIL_FROM,
     "GMAIL_APP_PASSWORD": GMAIL_APP_PASSWORD,
@@ -71,33 +72,36 @@ def load_companies():
 
 
 def search_recent_news(company_name):
-    url = "https://api.perplexity.ai/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {PERPLEXITY_API_KEY}",
-        "Content-Type": "application/json",
-    }
-    payload = {
-        "model": "sonar",
-        "messages": [
-            {
-                "role": "system",
-                "content": "You are a research assistant. Return concise, factual summaries of recent news. Focus on deals, leadership changes, earnings, partnerships, and strategic moves.",
-            },
-            {
-                "role": "user",
-                "content": f"What are the most recent news and developments about {company_name} in the last 30 days? Focus on M&A activity, leadership changes, earnings, funding, partnerships, and strategic initiatives.",
-            },
-        ],
-        "max_tokens": 500,
-    }
+    """Fetch recent news from Google News RSS (free). Returns summary string or None."""
+    encoded = quote_plus(company_name)
+    url = f"https://news.google.com/rss/search?q={encoded}&hl=en-US&gl=US&ceid=US:en"
     try:
-        resp = requests.post(url, headers=headers, json=payload, timeout=30)
+        resp = requests.get(url, timeout=20, headers={"User-Agent": "Mozilla/5.0"})
         resp.raise_for_status()
-        data = resp.json()
-        return data["choices"][0]["message"]["content"]
+        root = ET.fromstring(resp.content)
     except Exception as e:
-        print(f"  WARNING: Perplexity search failed for {company_name}: {e}")
+        print(f"  WARNING: Google News fetch failed for {company_name}: {e}")
         return None
+
+    cutoff = datetime.now() - timedelta(days=30)
+    articles = []
+    for item in root.findall(".//item")[:10]:
+        title = item.findtext("title") or ""
+        description = item.findtext("description") or ""
+        pub_date_str = item.findtext("pubDate") or ""
+        try:
+            pub_date = parsedate_to_datetime(pub_date_str).replace(tzinfo=None)
+            if pub_date < cutoff:
+                continue
+            date_str = pub_date.strftime("%Y-%m-%d")
+        except Exception:
+            date_str = datetime.now().strftime("%Y-%m-%d")
+        snippet = re.sub(r"<[^>]+>", "", description)[:300]
+        articles.append(f"[{date_str}] {title} -- {snippet}")
+
+    if not articles:
+        return None
+    return "\n".join(articles)
 
 
 def generate_linkedin_angles(company_name, news_summary):
