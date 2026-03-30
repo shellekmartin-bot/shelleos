@@ -76,15 +76,11 @@ Writing rules:
 - End with something that invites reflection, not a question"""
 
 # ─── Day-specific intro ───────────────────────────────────────────────────────
-MONDAY_INTRO = """Subject: Your LinkedIn Brief is Ready — Monday Edition
-
-Happy Monday! Here are your LinkedIn posts for the week.
-Pick one per company or mix and match. These are ready to post as-is or tweak to taste.
+MONDAY_INTRO = """Happy Monday! Here are your LinkedIn posts for the week.
+Pick one per company or mix and match. Ready to post as-is or tweak to taste.
 """
 
-THURSDAY_INTRO = """Subject: LinkedIn Brief — Thursday Drop
-
-Mid-week pulse check. Fresh posts below based on what's moving in the market.
+THURSDAY_INTRO = """Mid-week pulse check. Fresh posts below based on what's moving in the market.
 Ready to copy/paste or edit as you like.
 """
 

@@ -199,33 +199,25 @@ def send_email(body_text):
     is_thursday = now.weekday() == 3
 
     if is_thursday:
-        intro = """Hey Sugar Shane,
+        intro = """Hey Sugar Shane — Thursday.
 
-Thursday. Second chance. If you posted Monday... legend. If you didn't...
-the DJ booth doesn't open itself and neither does your LinkedIn presence.
+Second chance. If you posted Monday... legend. If not, the DJ booth doesn't open itself.
 
-Same deal: 3 angles per company. Pick one, tweak it, drop it like a beat.
-Takes 2 minutes. Your buyers are scrolling right now.
-
-Let's go.
+3 angles per company. Pick one, drop it. Takes 2 minutes.
 ─────────────────────────────────────────────────────────────
 
 """
     else:
-        intro = """Hey Shane,
+        intro = """Hey Shane — Happy Monday.
 
-Happy Monday. Here's your LinkedIn Brief... fresh angles for your
-PNW accounts based on what's happening right now.
+Fresh LinkedIn angles for your PNW accounts based on what's moving right now.
 
 3 angles per company:
-  - Deal Observation: what you're seeing across the territory
-  - Seasoned POV: the take only you can make
-  - Human/Unexpected: the one that makes them remember you
+  Deal Observation — what you're seeing across WA/OR
+  Seasoned POV — the take only you can make
+  Human/Unexpected — the one that makes them remember you
 
-Pick the ones that hit, tweak if you want, and post. Your buyers are
-already scrolling. Be in the feed.
-
-Let's go, Sugar Shane.
+Pick the ones that hit, tweak if you want, and post.
 ─────────────────────────────────────────────────────────────
 
 """
