@@ -31,9 +31,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: |
-          pip install --upgrade pip
-          pip install anthropic==0.86.0 httpx requests python-dotenv
+        run: pip install --upgrade --no-cache-dir anthropic httpx requests python-dotenv feedparser
 
       - name: Run Shelle brief
         if: github.event_name == 'schedule' || github.event.inputs.persona == 'shelle' || github.event.inputs.persona == 'all'
