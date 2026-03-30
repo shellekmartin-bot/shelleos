@@ -1,15 +1,14 @@
 name: LinkedIn Brief Generator
 
 on:
-  # Uncomment to run on schedule (e.g., Monday mornings 6 AM Pacific)
-  # schedule:
-  #   - cron: '0 13 * * 1'
+  schedule:
+    - cron: '0 11 * * 1'  # 4 AM Pacific every Monday
   workflow_dispatch:
     inputs:
       persona:
         description: 'Which persona to run'
         required: true
-        default: 'shelle'
+        default: 'all'
         type: choice
         options:
           - 'shelle'
@@ -35,26 +34,32 @@ jobs:
         run: pip install anthropic requests python-dotenv
 
       - name: Run Shelle brief
-        if: github.event.inputs.persona == 'shelle' || github.event.inputs.persona == 'all'
+        if: github.event_name == 'schedule' || github.event.inputs.persona == 'shelle' || github.event.inputs.persona == 'all'
         run: python LinkedIn/linkedin_brief.py
         env:
           ANTHROPIC_API_KEY:  ${{ secrets.ANTHROPIC_API_KEY }}
           PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
           AIRTABLE_API_KEY:   ${{ secrets.AIRTABLE_API_KEY }}
+          GMAIL_FROM:         ${{ secrets.GMAIL_FROM }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
 
       - name: Run Beth brief
-        if: github.event.inputs.persona == 'beth' || github.event.inputs.persona == 'all'
+        if: github.event_name == 'schedule' || github.event.inputs.persona == 'beth' || github.event.inputs.persona == 'all'
         run: python LinkedIn/linkedin_brief_beth.py
         env:
           ANTHROPIC_API_KEY:  ${{ secrets.ANTHROPIC_API_KEY }}
           PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
+          GMAIL_FROM:         ${{ secrets.GMAIL_FROM }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
 
       - name: Run Shane brief
-        if: github.event.inputs.persona == 'shane' || github.event.inputs.persona == 'all'
+        if: github.event_name == 'schedule' || github.event.inputs.persona == 'shane' || github.event.inputs.persona == 'all'
         run: python LinkedIn/linkedin_brief_shane.py
         env:
           ANTHROPIC_API_KEY:  ${{ secrets.ANTHROPIC_API_KEY }}
           PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
+          GMAIL_FROM:         ${{ secrets.GMAIL_FROM }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
 
       - name: Upload output artifacts
         uses: actions/upload-artifact@v4

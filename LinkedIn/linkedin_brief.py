@@ -5,8 +5,10 @@ Reads companies.txt, fetches recent news via Perplexity, generates 3 LinkedIn
 post angles per company using Claude.
 """
 
-import os, sys, time, requests
+import os, sys, time, requests, smtplib
 from datetime import datetime
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
 import anthropic
 
@@ -18,10 +20,16 @@ PERPLEXITY_API_KEY = os.getenv("PERPLEXITY_API_KEY")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 AIRTABLE_API_KEY = os.getenv("AIRTABLE_API_KEY")
 
+GMAIL_FROM = os.getenv("GMAIL_FROM")
+GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD")
+SEND_TO = "shelle.martin@datasite.com"
+
 missing = [k for k, v in {
     "PERPLEXITY_API_KEY": PERPLEXITY_API_KEY,
     "ANTHROPIC_API_KEY": ANTHROPIC_API_KEY,
     "AIRTABLE_API_KEY": AIRTABLE_API_KEY,
+    "GMAIL_FROM": GMAIL_FROM,
+    "GMAIL_APP_PASSWORD": GMAIL_APP_PASSWORD,
 }.items() if not v]
 if missing:
     print(f"ERROR: Missing .env keys: {', '.join(missing)}")
@@ -178,6 +186,26 @@ Do not add commentary, explanations, or options. Just the 3 posts."""
         return None
 
 
+def send_email(body_text):
+    today = datetime.now().strftime("%Y-%m-%d")
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = f"LinkedIn Brief — {today}"
+    msg["From"] = GMAIL_FROM
+    msg["To"] = SEND_TO
+    html = "<html><body><pre style='font-family: monospace; font-size: 14px;'>"
+    html += body_text.replace("<", "&lt;").replace(">", "&gt;")
+    html += "</pre></body></html>"
+    msg.attach(MIMEText(body_text, "plain"))
+    msg.attach(MIMEText(html, "html"))
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(GMAIL_FROM, GMAIL_APP_PASSWORD)
+            server.sendmail(GMAIL_FROM, SEND_TO, msg.as_string())
+        print(f"Email sent to {SEND_TO}")
+    except Exception as e:
+        print(f"WARNING: Email failed: {e}")
+
+
 def main():
     print(f"LinkedIn Brief Generator — {datetime.now().strftime('%Y-%m-%d %H:%M')}")
     print("=" * 60)
@@ -216,6 +244,8 @@ def main():
     with open(output_path, "w") as f:
         f.write(full_output)
     print(f"\nSaved to {output_path}")
+
+    send_email(full_output)
 
 
 if __name__ == "__main__":
