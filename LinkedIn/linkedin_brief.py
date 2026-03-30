@@ -56,10 +56,14 @@ claude_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
 
 def load_companies():
-    """Load companies from Airtable ShelleOS base. Falls back to companies.txt if Airtable fails."""
+    """Load strategic accounts from Airtable with LinkedIn URLs. Falls back to companies.txt."""
     url = f"https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_COMPANY_TABLE_ID}"
     headers = {"Authorization": f"Bearer {AIRTABLE_API_KEY}"}
-    params = {"fields[]": "Company Name", "pageSize": 100}
+    params = {
+        "fields[]": ["Company Name", "linkedin_company_url"],
+        "filterByFormula": "{is_strategic}=TRUE()",
+        "pageSize": 100,
+    }
     companies = []
     try:
         while True:
@@ -67,14 +71,16 @@ def load_companies():
             resp.raise_for_status()
             data = resp.json()
             for rec in data.get("records", []):
-                name = rec.get("fields", {}).get("Company Name", "").strip()
+                fields = rec.get("fields", {})
+                name = fields.get("Company Name", "").strip()
+                linkedin_url = fields.get("linkedin_company_url", "")
                 if name:
-                    companies.append(name)
+                    companies.append({"name": name, "linkedin_url": linkedin_url or ""})
             offset = data.get("offset")
             if not offset:
                 break
             params["offset"] = offset
-        print(f"Loaded {len(companies)} companies from Airtable")
+        print(f"Loaded {len(companies)} strategic accounts from Airtable")
         return companies
     except Exception as e:
         print(f"WARNING: Airtable load failed ({e}), falling back to companies.txt")
@@ -83,7 +89,10 @@ def load_companies():
         print(f"ERROR: {path} not found and Airtable unavailable.")
         sys.exit(1)
     with open(path) as f:
-        companies = [line.strip() for line in f if line.strip() and not line.startswith("#")]
+        companies = [
+            {"name": line.strip(), "linkedin_url": ""}
+            for line in f if line.strip() and not line.startswith("#")
+        ]
     if not companies:
         print("ERROR: companies.txt is empty.")
         sys.exit(1)
@@ -177,23 +186,26 @@ def main():
     output_path = os.path.join(SCRIPT_DIR, "linkedin_brief_output.txt")
     results = []
 
-    for i, company in enumerate(companies, 1):
-        print(f"\n[{i}/{len(companies)}] {company}")
+    for i, acct in enumerate(companies, 1):
+        name = acct["name"]
+        linkedin_url = acct["linkedin_url"]
+        print(f"\n[{i}/{len(companies)}] {name}")
         print(f"  Searching recent news...")
-        news = search_recent_news(company)
+        news = search_recent_news(name)
         if not news:
-            print(f"  Skipping {company} — no news found.")
-            results.append(f"\n{'=' * 60}\n{company}\n{'=' * 60}\nNo recent news found. Skipped.\n")
+            print(f"  Skipping {name} — no news found.")
+            results.append(f"\n{'=' * 60}\n{name}\n{'=' * 60}\nNo recent news found. Skipped.\n")
             continue
 
         print(f"  Generating LinkedIn angles...")
-        angles = generate_linkedin_angles(company, news)
+        angles = generate_linkedin_angles(name, news)
         if not angles:
-            print(f"  Skipping {company} — generation failed.")
-            results.append(f"\n{'=' * 60}\n{company}\n{'=' * 60}\nGeneration failed.\n")
+            print(f"  Skipping {name} — generation failed.")
+            results.append(f"\n{'=' * 60}\n{name}\n{'=' * 60}\nGeneration failed.\n")
             continue
 
-        block = f"\n{'=' * 60}\n{company.upper()}\n{'=' * 60}\n\n{angles}\n"
+        url_line = f"LinkedIn: {linkedin_url}\n" if linkedin_url else ""
+        block = f"\n{'=' * 60}\n{name.upper()}\n{'=' * 60}\n{url_line}\n{angles}\n"
         results.append(block)
         print(block)
 
