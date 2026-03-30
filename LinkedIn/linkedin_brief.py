@@ -163,19 +163,37 @@ Do not add commentary, explanations, or options. Just the 3 posts."""
 
 
 def send_email(body_text):
-    today = datetime.now().strftime("%Y-%m-%d")
-    intro = """Hey Shelle,
+    now = datetime.now()
+    today = now.strftime("%Y-%m-%d")
+    is_thursday = now.weekday() == 3
 
-Here's your LinkedIn Brief for the week. Below are 3 ready-to-post angles
-for each of your strategic accounts, based on what's happening right now.
+    if is_thursday:
+        intro = """Hey Shelle,
 
-Pick the ones that hit, tweak if you want, and post. The goal: stay visible
-to your buyers without spending an hour staring at a blank text box.
+It's Thursday. If you posted Monday... nice, here's more ammo.
+If you didn't... no judgment, but your competitors did. Let's fix that
+before the weekend.
+
+Same deal: 3 angles per company. Pick one, tweak it, post it.
+Takes 2 minutes. Your buyers are scrolling right now.
+
+Let's go.
+─────────────────────────────────────────────────────────────
+
+"""
+    else:
+        intro = """Hey Shelle,
+
+Happy Monday. Here's your LinkedIn Brief... fresh angles for your
+strategic accounts based on what's happening right now.
 
 3 angles per company:
   - Deal Observation: what you're seeing across the territory
   - Seasoned POV: the take only you can make
   - Human/Unexpected: the one that makes them remember you
+
+Pick the ones that hit, tweak if you want, and post. Your buyers are
+already scrolling. Be in the feed.
 
 Let's go.
 ─────────────────────────────────────────────────────────────
