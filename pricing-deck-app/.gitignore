@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Tests
+.pytest_cache/
+test_output/
+
+# Old template backups (pre-industry-slide work, kept locally only)
+*.bak_pre_industries
+
+# OS cruft
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+
+# Local generated decks
+*.pptx.out
+/tmp_decks/
