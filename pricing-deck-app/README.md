@@ -1,13 +1,31 @@
-# Datasite Proposal Builder
+# Datasite Diligence Proposal Builder
 
-A small Flask web app that lets a sales rep fill in a form and instantly
-download a fully-populated Datasite Diligence proposal deck
-(`.pptx`). The rep's name, photo, company, industry, prep period, and
-pricing are injected into one of five PowerPoint templates, then the
-deck is streamed back to the browser.
+> **For Datasite Diligence Transactional Pricing ONLY.**
+
+| | |
+| --- | --- |
+| **Built by** | **Shelle Martin** — Datasite |
+| **Status**   | Production-ready, internal use only |
+| **Repo**     | `pricing-deck-app/` (sub-folder of `shellekmartin-bot/shelleos`) |
+| **Stack**    | Python 3.9+ · Flask · python-pptx · vanilla JS / CSS |
+| **Tests**    | 10 end-to-end pytest cases (`tests/test_deck_generation.py`) |
+| **Speed**    | ~200 ms server-side generation per deck |
+| **Output**   | `{Company}_{MMDDYYYY}.pptx` — branded Datasite Diligence deck |
+
+A small Flask web app that lets a Datasite sales rep fill in a single
+form and instantly download a fully-populated Diligence transactional
+pricing deck (`.pptx`). The rep's name, photo, company, industry, prep
+period, and pricing are injected into one of five Datasite-branded
+PowerPoint templates, then the deck is streamed back to the browser as
+`{Company}_{MMDDYYYY}.pptx`.
 
 **Intended deployment:** internal use only, behind SSO. The app does not
 authenticate; the reverse proxy in front of it is expected to.
+
+**Branding:** UI follows the live Datasite brand guidelines (Inter
+typography, brand orange `#ff9800` / `#ff6d00`, Cosmic Noir text, off-
+white canvas). The `_small.pptx` templates are derived from approved
+Datasite Diligence master decks.
 
 ---
 
@@ -126,8 +144,8 @@ test uses so behaviour is consistent across manual and CI runs.
    Wait for the line `Datasite Proposal Builder starting on http://localhost:5050`.
 
 2. **Open the form.** In a browser go to http://localhost:5050/.
-   - You should see the black "For Datasite Diligence Proposals Only"
-     banner at the top.
+   - You should see the black **"For Datasite Diligence Transactional
+     Pricing ONLY"** banner at the top.
    - The heading is "Proposal Builder" in Inter / Datasite orange.
 
 3. **Fill in the rep card (top of form).**
@@ -163,7 +181,9 @@ test uses so behaviour is consistent across manual and CI runs.
 6. **Click Generate.** You should:
    - Hear a "cha-ching" cash-register sound (if your browser isn't muted).
    - See dollar signs and money emoji rise up the screen.
-   - Get a download named `AcmeCorporation_Datasite_MMDDYYYY.pptx`.
+   - Get a download named `Acme_Corporation_MMDDYYYY.pptx` (the
+     pattern is **`{Company}_{MMDDYYYY}.pptx`** — spaces in the
+     company name become underscores; commas/slashes are stripped).
 
 7. **Open the .pptx in PowerPoint or Keynote.** Verify:
    - Cover slide shows `Acme Corporation` and today's date.
@@ -376,3 +396,51 @@ gunicorn -w 4 -b 0.0.0.0:${PORT:-5050} --timeout 60 app:app
 | Industry pills missing                            | `/industries` returned an error. Check server log; `INDUSTRY_SLIDES` probably has a syntax error. |
 | Tier labels say `Up to 9,999` but rep entered custom bounds | Rep typed the bounds inside the wrong block. Both `blk4` and `blk6` mirror via the `syncTierBounds` JS — inspect the browser console for an error. |
 | Tests fail on a fresh clone                       | Make sure `pip install -r requirements.txt -r requirements-dev.txt` ran in the same venv as `python3 app.py`. |
+
+---
+
+## Credits
+
+**Built by Shelle Martin** for the Datasite sales team.
+
+Designed, scoped, branded, tested, and shipped by Shelle to give Datasite
+reps a one-click way to produce on-brand Diligence transactional pricing
+decks instead of hand-editing PowerPoint each time. The tool is intended
+strictly for internal use on Datasite Diligence transactional pricing
+proposals.
+
+If you're picking up this codebase:
+
+- The single source of truth for "what should the deck look like" is the
+  five `.pptx` templates in this folder. Edit those in PowerPoint to
+  change visuals; touch `app.py` only to change *behaviour*.
+- The single source of truth for "what data does a valid request look
+  like" is `SAMPLE_REP` / `SAMPLE_DEAL` at the top of
+  `tests/test_deck_generation.py`. Keep them in sync with this README.
+- The brand tokens (`--orange`, `--text`, `--bg`, the Inter font) at
+  the top of `index.html` are sourced directly from
+  `datasite.com/css/datasite.min.css`. If Datasite re-brands, update
+  those tokens and re-run the tests.
+
+Questions, bugs, or feature requests: contact **Shelle Martin** on Slack
+or email, or open an issue against `shellekmartin-bot/shelleos`.
+
+---
+
+## Changelog (high level)
+
+- **v1.0 — Apr 2026 — Shelle Martin**
+  - Production-ready hand-off to dev team.
+  - Five pricing modes (1 Term flat, 2 Terms flat, Warehouse, 1 Term
+    Tiered, 2 Terms w/Tiered Pricing, 3 Terms w/Tiered Pricing).
+  - Customizable tier boundaries (`9999` / `19999` defaults).
+  - Seven industry-specific slides with one-pill selection.
+  - Rep profile (name / title / photo) persisted in browser
+    `localStorage` so reps don't re-upload every time.
+  - Datasite brand guidelines applied throughout the UI.
+  - Cha-ching sound + money-rain animation on Generate.
+  - Output renamed to `{Company}_{MMDDYYYY}.pptx`.
+  - End-to-end pytest suite (10 tests, ~5 s on a laptop).
+  - Generation tuned to ~200 ms per deck (DEFLATE level 1).
+  - DEPLOY.md added for IT / SRE.
+  - README.md (this file) added for dev hand-off.
