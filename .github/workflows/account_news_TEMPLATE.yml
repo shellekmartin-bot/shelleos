@@ -1,0 +1,70 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# HOW TO ADD A NEW REP:
+#
+# 1. Copy this file → account_news_[first_last].yml
+# 2. Fill in the 4 places marked CHANGEME below
+# 3. Create shelleOS/accounts/[first_last].txt (one company per line)
+# 4. Commit and push — GitHub picks up the new workflow automatically
+# 5. Run workflow manually with dry_run=true to send a test email to Shelle
+# 6. Once email looks good, scheduled runs auto-deliver to the rep weekdays at noon UTC
+#
+# No new GitHub secrets needed — ANTHROPIC_API_KEY, GMAIL_APP_PASSWORD,
+# and GMAIL_FROM are shared across all rep workflows.
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: Account News Monitor — CHANGEME First Last  # <── CHANGEME
+
+on:
+  schedule:
+    - cron: '0 12 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Test run — sends to Shelle instead of rep'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+jobs:
+  run-monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r shelleOS/requirements_account_monitor.txt
+
+      - name: Run monitor (scheduled — live to rep)
+        if: github.event_name == 'schedule'
+        run: python shelleOS/account_news_monitor.py
+          --accounts-file shelleOS/accounts/CHANGEME_first_last.txt  # <── CHANGEME
+          --recipient CHANGEME.first.last@datasite.com               # <── CHANGEME
+        env:
+          ANTHROPIC_API_KEY:  ${{ secrets.ANTHROPIC_API_KEY }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GMAIL_FROM:         ${{ secrets.GMAIL_FROM }}
+
+      - name: Run monitor (manual trigger)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          DRY_FLAG=""
+          [ "${{ github.event.inputs.dry_run }}" = "true" ] && DRY_FLAG="--dry-run"
+          python shelleOS/account_news_monitor.py \
+            --accounts-file shelleOS/accounts/CHANGEME_first_last.txt \  # <── CHANGEME
+            --recipient CHANGEME.first.last@datasite.com \               # <── CHANGEME
+            $DRY_FLAG
+        env:
+          ANTHROPIC_API_KEY:  ${{ secrets.ANTHROPIC_API_KEY }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GMAIL_FROM:         ${{ secrets.GMAIL_FROM }}

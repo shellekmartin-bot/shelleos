@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """
-Account News Monitor — John Stallings Territory
-Scans Google News RSS for deal signals across 238 accounts,
+Account News Monitor — ShelleOS
+Scans Google News RSS for deal signals across a rep's territory accounts,
 classifies with Claude Haiku, emails a daily brief.
 
 NO Airtable. NO Google Sheets API. Fully standalone.
 
 Usage:
-  python3 account_news_monitor.py           # live run — sends to GMAIL_TO (John)
-  python3 account_news_monitor.py --dry-run # sends to GMAIL_FROM (Shelle) for review
+  python3 account_news_monitor.py --accounts-file shelleOS/accounts/john_stallings.txt --recipient John.stallings@datasite.com
+  python3 account_news_monitor.py --accounts-file shelleOS/accounts/john_stallings.txt --recipient John.stallings@datasite.com --dry-run
 
-.env requires: ANTHROPIC_API_KEY, GMAIL_APP_PASSWORD, GMAIL_FROM, GMAIL_TO
+.env requires: ANTHROPIC_API_KEY, GMAIL_APP_PASSWORD, GMAIL_FROM
 """
 
 import os
@@ -36,7 +36,6 @@ load_dotenv()
 ANTHROPIC_API_KEY  = os.getenv("ANTHROPIC_API_KEY")
 GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD")
 GMAIL_FROM         = os.getenv("GMAIL_FROM", "shelle.k.martin@gmail.com")
-GMAIL_TO           = os.getenv("GMAIL_TO", "John.stallings@datasite.com")
 
 missing = [k for k, v in {
     "ANTHROPIC_API_KEY": ANTHROPIC_API_KEY,
@@ -49,70 +48,21 @@ if missing:
 claude_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 TODAY = date.today().isoformat()
 
-# ─── Company list (238 accounts) ──────────────────────────────────────────────
-# Source: John Stallings - Sheet1.csv
-COMPANIES = [
-    "UnitedHealth Group", "Cardinal Health", "General Motors", "Ford Motor",
-    "Elevance Health", "Walgreens Boots Alliance", "Kroger", "Marathon Petroleum",
-    "State Farm Insurance", "Humana", "Target", "Archer Daniels Midland",
-    "Procter & Gamble", "Progressive", "Boeing", "Caterpillar", "Allstate",
-    "Nationwide", "United Airlines Holdings", "AbbVie", "Deere", "Eli Lilly",
-    "Dow", "U.S. Bancorp", "Abbott Laboratories", "Best Buy", "CHS",
-    "GE Aerospace", "US Foods Holding", "Mondelez International", "Cummins",
-    "Penske Automotive Group", "McDonald's", "Kraft Heinz", "3M",
-    "Discover Financial Services", "Jones Lang LaSalle", "Lear", "Sherwin-Williams",
-    "Exelon", "Stryker", "Reinsurance Group of America", "CDW", "Parker-Hannifin",
-    "General Mills", "American Electric Power", "GE HealthCare Technologies",
-    "Cleveland-Cliffs", "Goodyear Tire & Rubber", "Ameriprise Financial",
-    "C.H. Robinson Worldwide", "Steel Dynamics", "Emerson Electric", "W.W. Grainger",
-    "Corteva", "O'Reilly Automotive", "Whirlpool", "Ally Financial", "Edward Jones",
-    "Land O'Lakes", "Principal Financial", "Illinois Tool Works", "Northern Trust",
-    "Auto-Owners Insurance", "Ecolab", "Baxter International", "Casey's General Stores",
-    "LKQ", "BorgWarner", "Western & Southern Financial Group", "Xcel Energy",
-    "Fifth Third Bancorp", "FirstEnergy", "Kellanova", "DTE Energy",
-    "Berry Global Group", "Conagra Brands", "Huntington Bancshares", "Hormel Foods",
-    "Graybar Electric", "Molson Coors Beverage", "Arthur J. Gallagher",
-    "Cincinnati Financial", "Ulta Beauty", "BrightSpring Health Services",
-    "Andersons", "Owens Corning", "Thrivent Financial for Lutherans",
-    "Motorola Solutions", "Autoliv", "Dana", "Thor Industries", "Cintas",
-    "SpartanNash", "Ace Hardware", "KeyCorp", "Seaboard", "Dover",
-    "Packaging Corp. of America", "American Financial Group", "Solventum",
-    "Old Republic International", "Securian Financial Group", "J.M. Smucker",
-    "Vertiv Holdings", "Welltower", "TransDigm Group", "Post Holdings", "Masco",
-    "Zimmer Biomet Holdings", "Yum Brands", "Fastenal", "CMS Energy", "Core & Main",
-    "Ingredion", "RPM International", "Ameren", "Bath & Body Works", "Polaris",
-    "APi Group", "UFP Industries", "Hyatt Hotels", "Patterson", "Olin", "O-I Glass",
-    "Spirit AeroSystems Holdings", "Victoria's Secret", "CME Group",
-    "American Axle & Manufacturing", "Camping World Holdings", "Simon Property Group",
-    "Stifel Financial", "CF Industries Holdings", "Evergy", "OneMain Holdings",
-    "NiSource", "Greif", "Rocket Companies", "Texas Roadhouse", "Lineage",
-    "Brunswick", "Option Care Health", "Zebra Technologies",
-    "Telephone & Data Systems", "Country Financial", "Abercrombie & Fitch",
-    "Somnigroup International", "Ventas", "Bread Financial Holdings",
-    "Domino's Pizza", "Kemper", "AMC Entertainment Holdings",
-    "Fortune Brands Innovations", "Ryerson Holding", "Toro", "Timken", "M/I Homes",
-    "Applied Industrial Technologies", "CNO Financial Group", "Elanco Animal Health",
-    "Leggett & Platt", "Kelly Services", "Medical Mutual of Ohio", "Hyster-Yale",
-    "Peabody Energy", "Calumet Specialty Products Partners", "TransUnion",
-    "Brown-Forman", "Cboe Global Markets", "Lincoln Electric Holdings",
-    "Euronet Worldwide", "Wintrust Financial", "Hub Group", "Middleby",
-    "Mettler-Toledo International", "Visteon", "Diebold Nixdorf", "LCI Industries",
-    "Patrick Industries", "MillerKnoll", "H&R Block", "Donaldson", "AptarGroup",
-    "H.B. Fuller", "Scotts Miracle-Gro", "Federated Mutual Insurance",
-    "Garrett Motion", "Worthington Steel", "Phinia", "TreeHouse Foods",
-    "Jackson Financial", "IDEX", "Avient", "Allison Transmission Holdings",
-    "Sun Communities", "Atkore", "Hillenbrand", "Steelcase", "Designer Brands",
-    "Equity Residential", "Winnebago Industries", "Old National Bancorp",
-    "Installed Building Products", "Alight", "Cadence Bank", "Knife River",
-    "Energizer Holdings", "Advanced Drainage Systems", "UL Solutions",
-    "Everus Construction Group", "UMB Financial", "Vista Outdoor", "Churchill Downs",
-    "Cooper-Standard Holdings", "Caleres", "WK Kellogg", "Titan Machinery",
-    "MasterBrand", "Nordson", "Cargill", "Koch Industries", "Worldpay",
-    "EQ Office", "Reyes Holdings", "Enterprise Mobility", "Medline Industries",
-    "Meijer", "Gordon Food Service", "World Wide Technology", "Tenneco",
-    "Dabico Airport Solutions", "Hy-Vee", "Univar Solutions", "OSI Group",
-    "Greatest American Outdoors Group", "Avant",
-]
+
+# ─── Company list loader ───────────────────────────────────────────────────────
+def load_companies(accounts_file):
+    if not os.path.exists(accounts_file):
+        print(f"ERROR: Accounts file not found: {accounts_file}")
+        sys.exit(1)
+    with open(accounts_file) as f:
+        companies = [line.strip() for line in f
+                     if line.strip() and not line.startswith("#")]
+    if not companies:
+        print(f"ERROR: {accounts_file} is empty.")
+        sys.exit(1)
+    print(f"Loaded {len(companies)} companies from {accounts_file}")
+    return companies
+
 
 # ─── Signal types ──────────────────────────────────────────────────────────────
 TYPE_ACQUISITION = "M&A"
@@ -265,7 +215,6 @@ def match_company(name, company_names_set):
     n = name.lower().strip()
     if n in company_names_set:
         return True
-    # Check if any list company name starts with or contains the returned name
     for c in company_names_set:
         if n in c or c in n:
             return True
@@ -289,7 +238,6 @@ class SignalCollector:
         if not headline or not company_name:
             return None
 
-        # Only keep companies in John's list
         if not match_company(company_name, self.company_names_set):
             return None
 
@@ -360,32 +308,58 @@ def _badge(ttype):
 
 
 def _esc(text):
-    """Minimal HTML escaping."""
     return (text or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
-def format_brief_html(signals, dry_run=False):
-    signals = sorted(signals, key=lambda s: s["rank"])
-    total   = len(signals)
-    tag     = " · TEST" if dry_run else ""
+def format_brief_html(signals, num_accounts, dry_run=False, datasite_brand=False):
+    signals  = sorted(signals, key=lambda s: s["rank"])
+    total    = len(signals)
+    tag      = " · TEST" if dry_run else ""
     date_fmt = datetime.strptime(TODAY, "%Y-%m-%d").strftime("%A, %B %-d, %Y")
 
-    # ── Header ──────────────────────────────────────────────────────────────────
+    # ── Theme: Datasite brand vs default ──────────────────────────────────────
+    if datasite_brand:
+        outer_bg     = "#E4E3E8"   # Datasite Light Gray
+        header_bg    = "#78737D"   # Datasite Dark Gray
+        header_sub   = "#E4E3E8"
+        accent       = "#FF9F27"   # Datasite Orange
+        body_text    = "#575559"   # Datasite Text Gray
+        card_head_bg = "#F5F5F5"
+        card_border  = "#E4E3E8"
+        headline_clr = "#575559"
+        section_line = "#FF9F27"
+        section_clr  = "#78737D"
+        footer_clr   = "#78737D"
+        link_clr     = "#575559"
+    else:
+        outer_bg     = "#f0f2f5"
+        header_bg    = "#1a2332"
+        header_sub   = "#8899aa"
+        accent       = "#ffffff"
+        body_text    = "#555"
+        card_head_bg = "#f8f9fb"
+        card_border  = "#e8ecf0"
+        headline_clr = "#1a2332"
+        section_line = None        # uses per-type badge color
+        section_clr  = None
+        footer_clr   = "#aaa"
+        link_clr     = "#1a2332"
+
     html = f"""<!DOCTYPE html>
 <html><head><meta charset="utf-8"></head>
-<body style="margin:0;padding:0;background:#f0f2f5;font-family:Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f2f5;">
+<body style="margin:0;padding:0;background:{outer_bg};font-family:Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:{outer_bg};">
 <tr><td align="center" style="padding:24px 12px;">
 <table width="680" cellpadding="0" cellspacing="0" style="max-width:680px;width:100%;">
 
   <!-- HEADER -->
-  <tr><td style="background:#1a2332;border-radius:8px 8px 0 0;padding:28px 32px;">
-    <div style="color:#fff;font-size:26px;font-weight:700;letter-spacing:-0.5px;">
+  <tr><td style="background:{header_bg};border-radius:8px 8px 0 0;padding:28px 32px;{'border-bottom:4px solid ' + accent + ';' if datasite_brand else ''}">
+    <div style="color:#fff;font-size:26px;font-weight:700;letter-spacing:-0.5px;font-family:Arial,sans-serif;">
       Account Intelligence Brief{tag}
     </div>
-    <div style="color:#8899aa;font-size:14px;margin-top:6px;">
-      {date_fmt} &nbsp;|&nbsp; {len(COMPANIES)} accounts monitored &nbsp;|&nbsp;
-      <strong style="color:#fff;">{total} signal{'s' if total != 1 else ''} today</strong>
+    <div style="color:{header_sub};font-size:14px;margin-top:6px;font-family:Arial,sans-serif;">
+      {date_fmt} &nbsp;|&nbsp; {num_accounts} accounts monitored &nbsp;|&nbsp;
+      <strong style="color:{accent};">{total} signal{'s' if total != 1 else ''} today</strong>
     </div>
   </td></tr>
 
@@ -395,8 +369,8 @@ def format_brief_html(signals, dry_run=False):
 
     if not signals:
         html += (
-            '<p style="color:#555;font-size:15px;">'
-            'Quiet day — no significant signals found across your 238 accounts.</p>'
+            f'<p style="color:{body_text};font-size:15px;font-family:Arial,sans-serif;">'
+            f'Quiet day — no significant signals found across your {num_accounts} accounts.</p>'
         )
     else:
         for ttype, section_label in SECTION_LABELS:
@@ -404,13 +378,16 @@ def format_brief_html(signals, dry_run=False):
             if not items:
                 continue
 
-            color, _ = BADGE_COLORS.get(ttype, ("#7f8c8d", ttype))
+            badge_color, _ = BADGE_COLORS.get(ttype, ("#7f8c8d", ttype))
+            divider_color  = section_line if datasite_brand else badge_color
+            label_color    = section_clr  if datasite_brand else badge_color
+
             html += f"""
     <!-- SECTION: {section_label} -->
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
-      <tr><td style="padding-bottom:12px;border-bottom:2px solid {color};">
+      <tr><td style="padding-bottom:12px;border-bottom:2px solid {divider_color};">
         <span style="font-size:11px;font-weight:700;letter-spacing:1.5px;
-                     color:{color};text-transform:uppercase;">{_esc(section_label)}</span>
+                     color:{label_color};text-transform:uppercase;font-family:Arial,sans-serif;">{_esc(section_label)}</span>
         <span style="font-size:11px;color:#aaa;margin-left:8px;">({len(items)})</span>
       </td></tr>
 """
@@ -420,7 +397,7 @@ def format_brief_html(signals, dry_run=False):
                 company_esc  = _esc(s["company_name"])
                 link = s.get("link", "")
                 headline_html = (
-                    f'<a href="{link}" style="color:#1a2332;text-decoration:none;">'
+                    f'<a href="{link}" style="color:{link_clr};text-decoration:none;">'
                     f'{headline_esc}</a>'
                     if link else headline_esc
                 )
@@ -428,38 +405,34 @@ def format_brief_html(signals, dry_run=False):
                 html += f"""
       <tr><td style="padding:16px 0 0 0;">
         <table width="100%" cellpadding="0" cellspacing="0"
-               style="border:1px solid #e8ecf0;border-radius:6px;overflow:hidden;">
-          <!-- card header -->
-          <tr><td style="background:#f8f9fb;padding:10px 16px;
-                         border-bottom:1px solid #e8ecf0;">
+               style="border:1px solid {card_border};border-radius:6px;overflow:hidden;">
+          <tr><td style="background:{card_head_bg};padding:10px 16px;
+                         border-bottom:1px solid {card_border};">
             {_badge(ttype)}
-            <span style="font-size:13px;font-weight:700;color:#1a2332;
-                         margin-left:10px;vertical-align:middle;">{company_esc}</span>
+            <span style="font-size:13px;font-weight:700;color:{headline_clr};
+                         margin-left:10px;vertical-align:middle;font-family:Arial,sans-serif;">{company_esc}</span>
             <span style="font-size:11px;color:#aaa;float:right;
-                         line-height:22px;">{_esc(s['date_str'])}</span>
+                         line-height:22px;font-family:Arial,sans-serif;">{_esc(s['date_str'])}</span>
           </td></tr>
-          <!-- headline -->
           <tr><td style="padding:12px 16px 6px 16px;">
-            <div style="font-size:14px;font-weight:600;line-height:1.4;color:#1a2332;">
+            <div style="font-size:14px;font-weight:600;line-height:1.4;color:{headline_clr};font-family:Arial,sans-serif;">
               {headline_html}
             </div>
           </td></tr>
 """
                 if note:
                     html += f"""
-          <!-- notes -->
           <tr><td style="padding:0 16px 14px 16px;">
-            <div style="font-size:13px;color:#555;line-height:1.5;">{note}</div>
+            <div style="font-size:13px;color:{body_text};line-height:1.5;font-family:Arial,sans-serif;">{note}</div>
           </td></tr>
 """
                 html += "        </table>\n      </td></tr>\n"
 
             html += "    </table>\n"
 
-    # ── Footer ───────────────────────────────────────────────────────────────────
     html += f"""
-    <hr style="border:none;border-top:1px solid #e8ecf0;margin:8px 0 16px 0;">
-    <p style="font-size:11px;color:#aaa;margin:0;">
+    <hr style="border:none;border-top:1px solid {card_border};margin:8px 0 16px 0;">
+    <p style="font-size:11px;color:{footer_clr};margin:0;font-family:Arial,sans-serif;">
       Powered by ShelleOS &middot; Google News RSS &middot; Claude Haiku
       &nbsp;&middot;&nbsp; {date_fmt}
     </p>
@@ -474,43 +447,52 @@ def format_brief_html(signals, dry_run=False):
 
 
 # ─── Email send ────────────────────────────────────────────────────────────────
-def send_brief(brief_html, dry_run=False):
-    recipient = GMAIL_FROM if dry_run else GMAIL_TO
-    tag       = " [TEST]" if dry_run else ""
-    subject   = f"Account Intelligence Brief — {TODAY}{tag}"
+def send_brief(brief_html, recipient, dry_run=False):
+    to_addr = GMAIL_FROM if dry_run else recipient
+    tag     = " [TEST]" if dry_run else ""
+    subject = f"Account Intelligence Brief — {TODAY}{tag}"
 
     msg = MIMEMultipart("alternative")
     msg["From"]    = GMAIL_FROM
-    msg["To"]      = recipient
+    msg["To"]      = to_addr
     msg["Subject"] = subject
     msg.attach(MIMEText(brief_html, "html", "utf-8"))
 
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
         server.login(GMAIL_FROM, GMAIL_APP_PASSWORD)
         server.send_message(msg)
-    print(f"✅ Brief sent to {recipient}")
+    print(f"✅ Brief sent to {to_addr}")
 
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 def main():
     parser = argparse.ArgumentParser(description="Account News Monitor")
+    parser.add_argument("--accounts-file", required=True,
+                        help="Path to .txt file with one company name per line")
+    parser.add_argument("--recipient", required=True,
+                        help="Email address to send the brief to (live mode)")
     parser.add_argument("--dry-run", action="store_true",
-                        help="Send test email to GMAIL_FROM (Shelle) instead of GMAIL_TO (John)")
+                        help="Send test email to GMAIL_FROM (Shelle) instead of recipient")
+    parser.add_argument("--datasite-brand", action="store_true",
+                        help="Use Datasite brand colors (orange/gray) instead of default dark theme")
     args = parser.parse_args()
 
-    mode = f"TEST → {GMAIL_FROM}" if args.dry_run else f"LIVE → {GMAIL_TO}"
+    companies = load_companies(args.accounts_file)
+    num_accounts = len(companies)
+
+    mode = f"TEST → {GMAIL_FROM}" if args.dry_run else f"LIVE → {args.recipient}"
     print(f"\nAccount News Monitor — {TODAY} [{mode}]")
-    print(f"{len(COMPANIES)} companies loaded")
+    print(f"{num_accounts} companies loaded")
     print("=" * 60)
 
-    company_names_set = {c.lower() for c in COMPANIES}
+    company_names_set = {c.lower() for c in companies}
     collector = SignalCollector(company_names_set)
 
-    # ── PASS 1: All 238 companies in batches of 6 ─────────────────────────────
-    print(f"\nPASS 1: Scanning {len(COMPANIES)} companies in batches of 6...")
+    # ── PASS 1: All companies in batches of 6 ────────────────────────────────
+    print(f"\nPASS 1: Scanning {num_accounts} companies in batches of 6...")
     batch_size = 6
-    for i in range(0, len(COMPANIES), batch_size):
-        batch     = COMPANIES[i:i + batch_size]
+    for i in range(0, len(companies), batch_size):
+        batch     = companies[i:i + batch_size]
         batch_str = " OR ".join(f'"{c}"' for c in batch)
         query     = (f"({batch_str}) acquisition OR merger OR funding OR IPO "
                      f"OR CEO OR leadership OR layoff OR partnership OR \"strategic review\"")
@@ -521,10 +503,9 @@ def main():
                 print(f"  ✅ {e['company_name']} — {e['headline'][:70]}")
         time.sleep(0.3)
 
-    # ── PASS 2: High-signal individual searches for large-caps ────────────────
-    # Run a focused 72-hour pass on the largest companies for breaking news
-    large_caps = COMPANIES[:40]  # first 40 are the largest by revenue order
-    print(f"\nPASS 2: 72-hour breaking news check — top 40 companies...")
+    # ── PASS 2: 72-hour breaking news check on first 40 companies ────────────
+    large_caps = companies[:40]
+    print(f"\nPASS 2: 72-hour breaking news check — top {len(large_caps)} companies...")
     for company in large_caps:
         results = google_news_search_signals(
             f'"{company}" CEO OR CFO OR acquisition OR merger OR layoff OR "strategic review"',
@@ -538,20 +519,19 @@ def main():
                 print(f"  ✅ {e['company_name']} — {e['headline'][:70]}")
         time.sleep(0.3)
 
-    # ── Done ──────────────────────────────────────────────────────────────────
     total = len(collector.signals)
     print(f"\n{'='*60}")
     print(f"Signals found: {total}")
 
-    brief = format_brief_html(collector.signals, dry_run=args.dry_run)
+    brief = format_brief_html(collector.signals, num_accounts=num_accounts, dry_run=args.dry_run, datasite_brand=args.datasite_brand)
 
     if args.dry_run:
         print("\n" + "─"*60)
-        print(f"[HTML email — {len(brief)} chars, {len(collector.signals)} signals]")
+        print(f"[HTML email — {len(brief)} chars, {total} signals]")
         print("─"*60)
 
-    send_brief(brief, dry_run=args.dry_run)
-    print(f"Done. {total} signals | {'Test email → Shelle' if args.dry_run else 'Brief → John'}")
+    send_brief(brief, recipient=args.recipient, dry_run=args.dry_run)
+    print(f"Done. {total} signals | {'Test email → Shelle' if args.dry_run else f'Brief → {args.recipient}'}")
 
 
 if __name__ == "__main__":

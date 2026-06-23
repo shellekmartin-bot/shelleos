@@ -1,12 +1,13 @@
-name: Account News Monitor — John Stallings
+name: Tara Account Run
 
 on:
   schedule:
-    - cron: '0 12 * * 1-5'
+    # 4:00 AM PDT (11:00 UTC Apr-Oct) — change to 12:00 UTC Nov-Mar for PST
+    - cron: '0 11 * * 1-5'
   workflow_dispatch:
     inputs:
       dry_run:
-        description: 'Test run — sends to Shelle instead of John'
+        description: 'Test run — sends to Shelle instead of Tara'
         required: false
         default: 'true'
         type: choice
@@ -31,11 +32,12 @@ jobs:
       - name: Install dependencies
         run: pip install -r shelleOS/requirements_account_monitor.txt
 
-      - name: Run monitor (scheduled — live to John)
+      - name: Run monitor (scheduled — live to Tara)
         if: github.event_name == 'schedule'
         run: python shelleOS/account_news_monitor.py
-          --accounts-file shelleOS/accounts/john_stallings.txt
-          --recipient John.stallings@datasite.com
+          --accounts-file shelleOS/accounts/tara_dillon.txt
+          --recipient Tara.Dillon@datasite.com
+          --datasite-brand
         env:
           ANTHROPIC_API_KEY:  ${{ secrets.ANTHROPIC_API_KEY }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
@@ -47,8 +49,9 @@ jobs:
           DRY_FLAG=""
           [ "${{ github.event.inputs.dry_run }}" = "true" ] && DRY_FLAG="--dry-run"
           python shelleOS/account_news_monitor.py \
-            --accounts-file shelleOS/accounts/john_stallings.txt \
-            --recipient John.stallings@datasite.com \
+            --accounts-file shelleOS/accounts/tara_dillon.txt \
+            --recipient Tara.Dillon@datasite.com \
+            --datasite-brand \
             $DRY_FLAG
         env:
           ANTHROPIC_API_KEY:  ${{ secrets.ANTHROPIC_API_KEY }}
