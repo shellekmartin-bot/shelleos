@@ -317,49 +317,28 @@ def format_brief_html(signals, num_accounts, dry_run=False, datasite_brand=False
     tag      = " · TEST" if dry_run else ""
     date_fmt = datetime.strptime(TODAY, "%Y-%m-%d").strftime("%A, %B %-d, %Y")
 
-    # ── Theme: Datasite brand vs default ──────────────────────────────────────
     if datasite_brand:
-        outer_bg     = "#E4E3E8"   # Datasite Light Gray
-        header_bg    = "#78737D"   # Datasite Dark Gray
-        header_sub   = "#E4E3E8"
-        accent       = "#FF9F27"   # Datasite Orange
-        body_text    = "#575559"   # Datasite Text Gray
-        card_head_bg = "#F5F5F5"
-        card_border  = "#E4E3E8"
-        headline_clr = "#575559"
-        section_line = "#FF9F27"
-        section_clr  = "#78737D"
-        footer_clr   = "#78737D"
-        link_clr     = "#575559"
+        return _format_datasite(signals, total, num_accounts, tag, date_fmt, dry_run)
     else:
-        outer_bg     = "#f0f2f5"
-        header_bg    = "#1a2332"
-        header_sub   = "#8899aa"
-        accent       = "#ffffff"
-        body_text    = "#555"
-        card_head_bg = "#f8f9fb"
-        card_border  = "#e8ecf0"
-        headline_clr = "#1a2332"
-        section_line = None        # uses per-type badge color
-        section_clr  = None
-        footer_clr   = "#aaa"
-        link_clr     = "#1a2332"
+        return _format_default(signals, total, num_accounts, tag, date_fmt)
 
+
+def _format_default(signals, total, num_accounts, tag, date_fmt):
     html = f"""<!DOCTYPE html>
 <html><head><meta charset="utf-8"></head>
-<body style="margin:0;padding:0;background:{outer_bg};font-family:Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:{outer_bg};">
+<body style="margin:0;padding:0;background:#f0f2f5;font-family:Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f2f5;">
 <tr><td align="center" style="padding:24px 12px;">
 <table width="680" cellpadding="0" cellspacing="0" style="max-width:680px;width:100%;">
 
   <!-- HEADER -->
-  <tr><td style="background:{header_bg};border-radius:8px 8px 0 0;padding:28px 32px;{'border-bottom:4px solid ' + accent + ';' if datasite_brand else ''}">
+  <tr><td style="background:#1a2332;border-radius:8px 8px 0 0;padding:28px 32px;">
     <div style="color:#fff;font-size:26px;font-weight:700;letter-spacing:-0.5px;font-family:Arial,sans-serif;">
       Account Intelligence Brief{tag}
     </div>
-    <div style="color:{header_sub};font-size:14px;margin-top:6px;font-family:Arial,sans-serif;">
+    <div style="color:#8899aa;font-size:14px;margin-top:6px;font-family:Arial,sans-serif;">
       {date_fmt} &nbsp;|&nbsp; {num_accounts} accounts monitored &nbsp;|&nbsp;
-      <strong style="color:{accent};">{total} signal{'s' if total != 1 else ''} today</strong>
+      <strong style="color:#fff;">{total} signal{'s' if total != 1 else ''} today</strong>
     </div>
   </td></tr>
 
@@ -369,7 +348,7 @@ def format_brief_html(signals, num_accounts, dry_run=False, datasite_brand=False
 
     if not signals:
         html += (
-            f'<p style="color:{body_text};font-size:15px;font-family:Arial,sans-serif;">'
+            '<p style="color:#555;font-size:15px;font-family:Arial,sans-serif;">'
             f'Quiet day — no significant signals found across your {num_accounts} accounts.</p>'
         )
     else:
@@ -377,17 +356,11 @@ def format_brief_html(signals, num_accounts, dry_run=False, datasite_brand=False
             items = [s for s in signals if s["trigger_type"] == ttype]
             if not items:
                 continue
-
-            badge_color, _ = BADGE_COLORS.get(ttype, ("#7f8c8d", ttype))
-            divider_color  = section_line if datasite_brand else badge_color
-            label_color    = section_clr  if datasite_brand else badge_color
-
+            color, _ = BADGE_COLORS.get(ttype, ("#7f8c8d", ttype))
             html += f"""
-    <!-- SECTION: {section_label} -->
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
-      <tr><td style="padding-bottom:12px;border-bottom:2px solid {divider_color};">
-        <span style="font-size:11px;font-weight:700;letter-spacing:1.5px;
-                     color:{label_color};text-transform:uppercase;font-family:Arial,sans-serif;">{_esc(section_label)}</span>
+      <tr><td style="padding-bottom:12px;border-bottom:2px solid {color};">
+        <span style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:{color};text-transform:uppercase;font-family:Arial,sans-serif;">{_esc(section_label)}</span>
         <span style="font-size:11px;color:#aaa;margin-left:8px;">({len(items)})</span>
       </td></tr>
 """
@@ -397,52 +370,162 @@ def format_brief_html(signals, num_accounts, dry_run=False, datasite_brand=False
                 company_esc  = _esc(s["company_name"])
                 link = s.get("link", "")
                 headline_html = (
-                    f'<a href="{link}" style="color:{link_clr};text-decoration:none;">'
-                    f'{headline_esc}</a>'
+                    f'<a href="{link}" style="color:#1a2332;text-decoration:none;">{headline_esc}</a>'
                     if link else headline_esc
                 )
-
                 html += f"""
       <tr><td style="padding:16px 0 0 0;">
-        <table width="100%" cellpadding="0" cellspacing="0"
-               style="border:1px solid {card_border};border-radius:6px;overflow:hidden;">
-          <tr><td style="background:{card_head_bg};padding:10px 16px;
-                         border-bottom:1px solid {card_border};">
+        <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e8ecf0;border-radius:6px;overflow:hidden;">
+          <tr><td style="background:#f8f9fb;padding:10px 16px;border-bottom:1px solid #e8ecf0;">
             {_badge(ttype)}
-            <span style="font-size:13px;font-weight:700;color:{headline_clr};
-                         margin-left:10px;vertical-align:middle;font-family:Arial,sans-serif;">{company_esc}</span>
-            <span style="font-size:11px;color:#aaa;float:right;
-                         line-height:22px;font-family:Arial,sans-serif;">{_esc(s['date_str'])}</span>
+            <span style="font-size:13px;font-weight:700;color:#1a2332;margin-left:10px;vertical-align:middle;font-family:Arial,sans-serif;">{company_esc}</span>
+            <span style="font-size:11px;color:#aaa;float:right;line-height:22px;font-family:Arial,sans-serif;">{_esc(s['date_str'])}</span>
           </td></tr>
           <tr><td style="padding:12px 16px 6px 16px;">
-            <div style="font-size:14px;font-weight:600;line-height:1.4;color:{headline_clr};font-family:Arial,sans-serif;">
-              {headline_html}
-            </div>
+            <div style="font-size:14px;font-weight:600;line-height:1.4;color:#1a2332;font-family:Arial,sans-serif;">{headline_html}</div>
           </td></tr>
 """
                 if note:
                     html += f"""
           <tr><td style="padding:0 16px 14px 16px;">
-            <div style="font-size:13px;color:{body_text};line-height:1.5;font-family:Arial,sans-serif;">{note}</div>
+            <div style="font-size:13px;color:#555;line-height:1.5;font-family:Arial,sans-serif;">{note}</div>
           </td></tr>
 """
                 html += "        </table>\n      </td></tr>\n"
-
             html += "    </table>\n"
 
     html += f"""
-    <hr style="border:none;border-top:1px solid {card_border};margin:8px 0 16px 0;">
-    <p style="font-size:11px;color:{footer_clr};margin:0;font-family:Arial,sans-serif;">
-      Powered by ShelleOS &middot; Google News RSS &middot; Claude Haiku
-      &nbsp;&middot;&nbsp; {date_fmt}
+    <hr style="border:none;border-top:1px solid #e8ecf0;margin:8px 0 16px 0;">
+    <p style="font-size:11px;color:#aaa;margin:0;font-family:Arial,sans-serif;">
+      Powered by ShelleOS &middot; Google News RSS &middot; Claude Haiku &nbsp;&middot;&nbsp; {date_fmt}
     </p>
-
   </td></tr>
 </table>
 </td></tr>
 </table>
 </body></html>"""
+    return html
 
+
+def _format_datasite(signals, total, num_accounts, tag, date_fmt, dry_run):
+    # Build summary counts for the orange bar
+    type_counts = {}
+    for s in signals:
+        t = s["trigger_type"]
+        type_counts[t] = type_counts.get(t, 0) + 1
+
+    # Summary bar pills: only types that have signals, in ranked order
+    pill_order = [
+        (TYPE_ACQUISITION, "M&A"),
+        (TYPE_SELL_SIDE,   "Sell Side"),
+        (TYPE_ACTIVIST,    "Activist"),
+        (TYPE_FUNDING,     "Funding"),
+        (TYPE_LEADERSHIP,  "Leadership"),
+        (TYPE_PARTNERSHIP, "Partnership"),
+        (TYPE_LAYOFFS,     "Layoffs"),
+        (TYPE_EARNINGS,    "Earnings"),
+        (TYPE_NEWS,        "News"),
+    ]
+    pills_html = ""
+    for ttype, label in pill_order:
+        count = type_counts.get(ttype, 0)
+        if count:
+            pills_html += (
+                f'<span style="font-size:11px;color:rgba(255,255,255,0.9);font-family:Arial,sans-serif;">'
+                f'{count} {label}</span>'
+                f'<span style="font-size:11px;color:rgba(255,255,255,0.4);margin:0 8px;">·</span>'
+            )
+
+    html = f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#E4E3E8;font-family:Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#E4E3E8;">
+<tr><td align="center" style="padding:24px 12px;">
+<table width="680" cellpadding="0" cellspacing="0" style="max-width:680px;width:100%;">
+
+  <!-- HEADER -->
+  <tr><td style="background:#78737D;border-radius:8px 8px 0 0;padding:28px 32px;">
+    <div style="color:#fff;font-size:26px;font-weight:700;letter-spacing:-0.5px;font-family:Arial,sans-serif;">
+      Account Intelligence Brief{tag}
+    </div>
+    <div style="color:#E4E3E8;font-size:14px;margin-top:6px;font-family:Arial,sans-serif;">
+      {date_fmt} &nbsp;·&nbsp; {num_accounts} accounts monitored
+    </div>
+  </td></tr>
+
+  <!-- ORANGE SUMMARY BAR -->
+  <tr><td style="background:#FF9F27;padding:12px 32px;">
+    <span style="font-size:12px;font-weight:700;color:#fff;letter-spacing:0.5px;font-family:Arial,sans-serif;margin-right:12px;">
+      {total} SIGNAL{'S' if total != 1 else ''} TODAY
+    </span>
+    {pills_html}
+  </td></tr>
+
+  <!-- BODY -->
+  <tr><td style="background:#fff;border-radius:0 0 8px 8px;padding:28px 32px;">
+"""
+
+    if not signals:
+        html += (
+            '<p style="color:#575559;font-size:15px;font-family:Arial,sans-serif;">'
+            f'Quiet day — no significant signals found across your {num_accounts} accounts.</p>'
+        )
+    else:
+        for ttype, section_label in SECTION_LABELS:
+            items = [s for s in signals if s["trigger_type"] == ttype]
+            if not items:
+                continue
+
+            html += f"""
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+      <tr><td style="padding-bottom:10px;">
+        <span style="font-size:10px;font-weight:700;letter-spacing:1.5px;color:#FF9F27;text-transform:uppercase;font-family:Arial,sans-serif;">{_esc(section_label)}</span>
+        <span style="font-size:10px;color:#aaa;margin-left:6px;font-family:Arial,sans-serif;">({len(items)})</span>
+      </td></tr>
+"""
+            for s in items:
+                note = _esc(s["notes"].split(".")[0] + "." if s["notes"] else "")
+                headline_esc = _esc(s["headline"])
+                company_esc  = _esc(s["company_name"])
+                link = s.get("link", "")
+                headline_html = (
+                    f'<a href="{link}" style="color:#575559;text-decoration:none;font-weight:600;">{headline_esc}</a>'
+                    if link else f'<span style="font-weight:600;">{headline_esc}</span>'
+                )
+                html += f"""
+      <tr><td style="padding:0 0 10px 0;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background:#FAFAFA;border:0.5px solid #E4E3E8;border-radius:6px;">
+          <tr><td style="padding:12px 16px 6px 16px;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td><span style="font-size:14px;font-weight:700;color:#575559;font-family:Arial,sans-serif;">{company_esc}</span></td>
+                <td align="right"><span style="font-size:11px;color:#aaa;font-family:Arial,sans-serif;">{_esc(s['date_str'])}</span></td>
+              </tr>
+            </table>
+          </td></tr>
+          <tr><td style="padding:4px 16px 6px 16px;">
+            <div style="font-size:13px;line-height:1.5;color:#575559;font-family:Arial,sans-serif;">{headline_html}</div>
+          </td></tr>
+"""
+                if note:
+                    html += f"""
+          <tr><td style="padding:0 16px 14px 16px;">
+            <div style="font-size:12px;color:#78737D;line-height:1.5;font-family:Arial,sans-serif;">{note}</div>
+          </td></tr>
+"""
+                html += "        </table>\n      </td></tr>\n"
+            html += "    </table>\n"
+
+    html += f"""
+    <hr style="border:none;border-top:0.5px solid #E4E3E8;margin:8px 0 14px 0;">
+    <p style="font-size:10px;color:#78737D;margin:0;font-family:Arial,sans-serif;">
+      Powered by ShelleOS &middot; Google News RSS &middot; Claude Haiku &nbsp;&middot;&nbsp; {date_fmt}
+    </p>
+  </td></tr>
+</table>
+</td></tr>
+</table>
+</body></html>"""
     return html
 
 
