@@ -1,0 +1,101 @@
+# Jacques Marriott — territory accounts (100)
+6Sense
+Addition Therapeutics
+Affirm
+Aion Medical
+Airbnb Inc.
+Airbyte
+Airtable
+Airtime Media, Inc.
+Airwallex
+Ajax Health
+Alchemy (Software Development Applications)
+Allbirds
+Allcloud
+Alto Pharmacy, Llc.
+Amplitude
+Amyris
+Anaplan Inc.
+Anchorage Digital
+AngelList
+Antelope Pets
+Anthropic
+AnyRoad
+Anyscale
+Aptible Inc.
+Asana
+Assetmark, Inc.
+Atlassian Corporation PLC
+Automatic Inc.
+Bellabeat Inc.
+Betterup, Inc.
+BIO - Rad Laboratories Inc.
+BioAge Labs
+BitGo
+Blend
+Blue Cross Blue Shield of California
+BlueShift Labs Inc.
+Bridgebio, Inc.
+Bright Machines, Inc.
+Brilliant Earth, Llc.
+Carbon Health
+Carta
+Checkr
+Chime
+ClearScale Llc.
+Clickhouse, Inc.
+CloudFlare
+Coinbase
+Collective Health
+Contentstack Inc.
+Crunchbase Inc.
+D-Wave Quantum
+Databook
+Databricks
+Deel
+Deep Fission, Inc.
+Delphix Corp.
+Demandbase, Inc.
+Denodo Technologies, Inc.
+Digital Realty Inc.
+DigitalOcean
+Discord
+DivcoWest
+Divvy
+Docker Inc.
+DocuSign
+Dolby Laboratories
+Doordash, Inc.
+Doximity
+Dropbox
+Edpuzzle
+Evergreen Services Group Inc.
+Evommune, Inc.
+Fandom
+Fastly
+Fictiv, Inc.
+Fieldwork Brewing Co.
+Figma, Inc.
+Flexport
+Fly.io
+Flynn Group - HQ
+Forge Global Inc.
+Grocery Outlet
+Guardant Health
+Hippo Holdings
+IntApp
+Jazz Pharmaceuticals Inc.
+Kodiak Sciences
+Kyverna Therapeutics Inc.
+LightRiver Technologies Inc.
+Mashgin
+Mattermost
+NationalMI
+Once upon a Farm
+Rigetti Computing
+Rubrik
+TPG Capital LP
+Trilogy Interactive Llc.
+TripActions (Navan Inc.)
+Wealthfront
+XAI

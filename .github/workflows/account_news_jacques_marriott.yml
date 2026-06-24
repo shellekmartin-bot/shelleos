@@ -1,0 +1,59 @@
+name: Jacques Marriott Account Run
+
+on:
+  schedule:
+    # 4:17 AM PDT (11:17 UTC Apr-Oct) — change to 12:17 UTC Nov-Mar for PST
+    - cron: '17 11 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Test run — sends to Shelle instead of Jacques'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+jobs:
+  run-monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r shelleOS/requirements_account_monitor.txt
+
+      - name: Run monitor (scheduled — live to Jacques)
+        if: github.event_name == 'schedule'
+        run: python shelleOS/account_news_monitor.py
+          --accounts-file shelleOS/accounts/jacques_marriott.txt
+          --recipient Jacques.Marriott@datasite.com
+          --datasite-brand
+        env:
+          ANTHROPIC_API_KEY:  ${{ secrets.ANTHROPIC_API_KEY }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GMAIL_FROM:         ${{ secrets.GMAIL_FROM }}
+
+      - name: Run monitor (manual trigger)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          DRY_FLAG=""
+          [ "${{ github.event.inputs.dry_run }}" = "true" ] && DRY_FLAG="--dry-run"
+          python shelleOS/account_news_monitor.py \
+            --accounts-file shelleOS/accounts/jacques_marriott.txt \
+            --recipient Jacques.Marriott@datasite.com \
+            --datasite-brand \
+            $DRY_FLAG
+        env:
+          ANTHROPIC_API_KEY:  ${{ secrets.ANTHROPIC_API_KEY }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GMAIL_FROM:         ${{ secrets.GMAIL_FROM }}
