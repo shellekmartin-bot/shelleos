@@ -221,6 +221,79 @@ def match_company(name, company_names_set):
     return False
 
 
+
+# ─── Regional news (non deal-signal) ───────────────────────────────────────────
+REGION_BY_ACCOUNTS_FILE = {
+    "john_stallings.txt": "Ohio",
+    "tara_dillon.txt": "San Francisco Bay Area",
+    "jacques_marriott.txt": "San Francisco Bay Area",
+}
+
+# Keyword denylist — keeps the regional section to normal business/community
+# news and out of crime, tragedy, and disaster coverage.
+REGIONAL_NEWS_EXCLUDE_KEYWORDS = [
+    "shooting", "shooter", "gunman", "gun violence", "shot dead", "shot and killed",
+    "killed", "kills", "killer", "murder", "homicide", "stabbing", "stabbed",
+    "assault", "sexual assault", "rape", "arrested", "arrest", "indicted",
+    "crash", "collision", "hit-and-run", "wildfire", "explosion", "robbery",
+    "burglary", "kidnap", "manhunt", "missing person", "amber alert",
+    "obituary", "dies at", "dead at", "death toll", "fatal", "fatally",
+    "drowned", "overdose", "abuse", "trial", "sentenced", "convicted",
+    "prison", "jail", "car accident", "earthquake", "flooding", "tornado",
+    "hurricane", "standoff", "hostage",
+]
+
+
+def fetch_regional_news(region, lookback_days=3, max_items=5):
+    """Pull general regional news (not tied to a specific account) and filter
+    out crime/tragedy/disaster coverage so the digest stays 'normal news.'"""
+    if not region:
+        return []
+    articles = fetch_google_news(f"{region} news", lookback_days=lookback_days)
+    clean = []
+    seen = set()
+    for a in articles:
+        title_l = a["title"].lower()
+        if any(kw in title_l for kw in REGIONAL_NEWS_EXCLUDE_KEYWORDS):
+            continue
+        key = title_l[:40]
+        if key in seen:
+            continue
+        seen.add(key)
+        clean.append(a)
+        if len(clean) >= max_items:
+            break
+    return clean
+
+
+def _format_regional_news(articles, region, border_color, muted_color, link_color):
+    """HTML fragment for the 'Regional News' section, shared by both themes."""
+    if not articles or not region:
+        return ""
+    rows = ""
+    for a in articles:
+        title_esc = _esc(a["title"])
+        link = a.get("link", "")
+        date_str = a.get("date_str", "")
+        title_html = (
+            f'<a href="{link}" style="color:{link_color};text-decoration:none;">{title_esc}</a>'
+            if link else title_esc
+        )
+        rows += f"""
+      <tr><td style="padding:8px 0;border-bottom:1px solid {border_color};">
+        <div style="font-size:13px;font-family:Arial,sans-serif;">{title_html}</div>
+        <div style="font-size:11px;color:{muted_color};margin-top:2px;font-family:Arial,sans-serif;">{date_str}</div>
+      </td></tr>"""
+    return f"""
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px;">
+      <tr><td style="padding-bottom:8px;">
+        <span style="font-size:14px;font-weight:700;font-family:Arial,sans-serif;">Regional News — {region}</span>
+      </td></tr>
+      {rows}
+    </table>
+"""
+
+
 class SignalCollector:
     def __init__(self, company_names_set):
         self.company_names_set     = company_names_set
@@ -311,19 +384,23 @@ def _esc(text):
     return (text or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
-def format_brief_html(signals, num_accounts, dry_run=False, datasite_brand=False):
+def format_brief_html(signals, num_accounts, dry_run=False, datasite_brand=False,
+                       regional_articles=None, region_label=None):
     signals  = sorted(signals, key=lambda s: s["rank"])
     total    = len(signals)
     tag      = " · TEST" if dry_run else ""
     date_fmt = datetime.strptime(TODAY, "%Y-%m-%d").strftime("%A, %B %-d, %Y")
 
     if datasite_brand:
-        return _format_datasite(signals, total, num_accounts, tag, date_fmt, dry_run)
+        return _format_datasite(signals, total, num_accounts, tag, date_fmt, dry_run,
+                                 regional_articles, region_label)
     else:
-        return _format_default(signals, total, num_accounts, tag, date_fmt)
+        return _format_default(signals, total, num_accounts, tag, date_fmt,
+                                regional_articles, region_label)
 
 
-def _format_default(signals, total, num_accounts, tag, date_fmt):
+def _format_default(signals, total, num_accounts, tag, date_fmt,
+                     regional_articles=None, region_label=None):
     html = f"""<!DOCTYPE html>
 <html><head><meta charset="utf-8"></head>
 <body style="margin:0;padding:0;background:#f0f2f5;font-family:Arial,sans-serif;">
@@ -394,6 +471,9 @@ def _format_default(signals, total, num_accounts, tag, date_fmt):
                 html += "        </table>\n      </td></tr>\n"
             html += "    </table>\n"
 
+    if regional_articles:
+        html += _format_regional_news(regional_articles, region_label, "#e8ecf0", "#aaa", "#1a2332")
+
     html += f"""
     <hr style="border:none;border-top:1px solid #e8ecf0;margin:8px 0 16px 0;">
     <p style="font-size:11px;color:#aaa;margin:0;font-family:Arial,sans-serif;">
@@ -407,7 +487,8 @@ def _format_default(signals, total, num_accounts, tag, date_fmt):
     return html
 
 
-def _format_datasite(signals, total, num_accounts, tag, date_fmt, dry_run):
+def _format_datasite(signals, total, num_accounts, tag, date_fmt, dry_run,
+                      regional_articles=None, region_label=None):
     # Build summary counts for the orange bar
     type_counts = {}
     for s in signals:
@@ -516,6 +597,9 @@ def _format_datasite(signals, total, num_accounts, tag, date_fmt, dry_run):
                 html += "        </table>\n      </td></tr>\n"
             html += "    </table>\n"
 
+    if regional_articles:
+        html += _format_regional_news(regional_articles, region_label, "#E4E3E8", "#78737D", "#575559")
+
     html += f"""
     <hr style="border:none;border-top:0.5px solid #E4E3E8;margin:8px 0 14px 0;">
     <p style="font-size:10px;color:#78737D;margin:0;font-family:Arial,sans-serif;">
@@ -571,6 +655,11 @@ def main():
     company_names_set = {c.lower() for c in companies}
     collector = SignalCollector(company_names_set)
 
+    region = REGION_BY_ACCOUNTS_FILE.get(os.path.basename(args.accounts_file))
+    regional_articles = fetch_regional_news(region) if region else []
+    if region:
+        print(f"Regional news ({region}): {len(regional_articles)} items after filtering")
+
     # ── PASS 1: All companies in batches of 6 ────────────────────────────────
     print(f"\nPASS 1: Scanning {num_accounts} companies in batches of 6...")
     batch_size = 6
@@ -606,7 +695,8 @@ def main():
     print(f"\n{'='*60}")
     print(f"Signals found: {total}")
 
-    brief = format_brief_html(collector.signals, num_accounts=num_accounts, dry_run=args.dry_run, datasite_brand=args.datasite_brand)
+    brief = format_brief_html(collector.signals, num_accounts=num_accounts, dry_run=args.dry_run, datasite_brand=args.datasite_brand,
+                               regional_articles=regional_articles, region_label=region)
 
     if args.dry_run:
         print("\n" + "─"*60)
